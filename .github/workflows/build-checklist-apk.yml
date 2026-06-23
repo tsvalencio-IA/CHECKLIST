@@ -1,9 +1,9 @@
-name: Build Checklist APK
+name: GERAR APK CHECKLIST
 
 on:
   workflow_dispatch:
   push:
-    branches: [ main, master ]
+  pull_request:
 
 jobs:
   android:
@@ -36,8 +36,8 @@ jobs:
           node - <<'NODE'
           const fs = require('fs');
           const pkg = {
-            name: 'oficin-ia-checklist-v15-6-github-pages-apk-print-a4-2folhas',
-            version: '15.6.0',
+            name: 'oficin-ia-checklist-v15-7-github-pages-apk-saas-fix',
+            version: '15.7.0',
             private: true,
             description: 'OFICIN-IA Checklist separado para GitHub Pages com APK próprio.',
             scripts: {
@@ -133,5 +133,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: OFICIN-IA-CHECKLIST-V15-6-GITHUB-PAGES-APK-PRINT-A4-2FOLHAS
+          name: OFICIN-IA-CHECKLIST-V15-7-GITHUB-PAGES-APK-SAAS-FIX
           path: android/app/build/outputs/apk/debug/app-debug.apk
