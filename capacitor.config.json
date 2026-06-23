@@ -1,9 +1,16 @@
 {
-  "appId": "br.com.thiaguinhosolucoes.oficinia.checklist.v15",
-  "appName": "OFICIN-IA Checklist",
+  "appId": "br.com.thiaguinhosolucoes.oficinia.checklist.v15app",
+  "appName": "Checklist Inteligente",
   "webDir": "dist-apk",
   "bundledWebRuntime": false,
   "server": {
     "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "backgroundColor": "#0f172a",
+      "showSpinner": false
+    }
   }
 }

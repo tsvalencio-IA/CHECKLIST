@@ -1,13 +1,13 @@
 {
   "name": "oficin-ia-checklist-v15-repo-separado",
-  "version": "15.0.0",
+  "version": "15.1.0",
   "private": true,
-  "description": "OFICIN-IA Checklist separado do SaaS, mesmo Firebase e APK próprio.",
+  "description": "OFICIN-IA Checklist separado do SaaS, mesmo Firebase, APK próprio e abertura direta no checklist.",
   "scripts": {
     "prepare:apk": "node scripts/prepare-apk.js",
     "cap:add": "npx cap add android",
     "cap:sync": "npx cap sync android",
-    "build:android": "npm run prepare:apk && npx cap sync android && cd android && ./gradlew assembleDebug"
+    "build:android": "npm run prepare:apk && if [ ! -d android ]; then npx cap add android; fi && npx cap sync android && npx capacitor-assets generate --android --assetPath assets && cd android && chmod +x ./gradlew && ./gradlew assembleDebug"
   },
   "dependencies": {
     "@capacitor/android": "latest",

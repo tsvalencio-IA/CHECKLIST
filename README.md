@@ -53,3 +53,14 @@ O APK usa appId próprio e ícone próprio.
 Este app foi separado propositalmente para não depender de `jarvis.html`, `equipe.html` ou `checklist.html` dentro do SaaS. O botão de SaaS abre a URL configurada em `js/config.js`.
 
 Se as regras Firebase bloquearem leitura, gravação ou exclusão, o app mostra aviso e mantém fallback local para não travar o mecânico. A permissão final depende das regras do Firestore do SaaS/tenant.
+
+
+## Ajuste V15.1 — aplicativo real e porta
+
+- O APK usa o pacote nativo `br.com.thiaguinhosolucoes.oficinia.checklist.v15app`.
+- O nome do aplicativo instalado fica `Checklist Inteligente`.
+- Ao tocar no ícone instalado, o Android abre `index.html`, ou seja, abre o Checklist separado, não o SaaS.
+- Para gerar o APK: suba este ZIP em um repositório novo e rode a Action **Build Checklist APK**. Baixe o artefato `OFICIN-IA-CHECKLIST-V15-1-APK`.
+- Na seção **Portas, fechaduras, limitadores e borrachas**, foi incluído o item técnico **Limitador / freio de porta** separado de dobradiças.
+
+Importante: pelo navegador, o botão `Instalar app/PWA` depende das regras do Chrome. Para aplicativo real com ícone próprio, use o APK gerado pela Action.
