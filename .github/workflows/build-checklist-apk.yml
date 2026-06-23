@@ -15,27 +15,34 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '22.x'
+
+      - name: Confirm Node version
+        run: |
+          node -v
+          npm -v
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: '17'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
 
       - name: Prepare web bundle
         run: npm run prepare:apk
 
       - name: Add Android project
         run: |
+          node -v
+          npx cap --version
           if [ ! -d android ]; then npx cap add android; fi
           npx cap sync android
 
-      - name: Generate Android launcher icon and splash
-        run: npx capacitor-assets generate --android --assetPath assets
+      - name: Apply Android launcher icon
+        run: npm run android:icons
 
       - name: Build debug APK
         run: cd android && chmod +x ./gradlew && ./gradlew assembleDebug
@@ -43,5 +50,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: OFICIN-IA-CHECKLIST-V15-1-APK
+          name: OFICIN-IA-CHECKLIST-V15-4-GITHUB-PAGES-APK-CORRIGIDO
           path: android/app/build/outputs/apk/debug/app-debug.apk
