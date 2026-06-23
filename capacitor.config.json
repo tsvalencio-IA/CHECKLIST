@@ -1,0 +1,9 @@
+{
+  "appId": "br.com.thiaguinhosolucoes.oficinia.checklist.v15",
+  "appName": "OFICIN-IA Checklist",
+  "webDir": "dist-apk",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

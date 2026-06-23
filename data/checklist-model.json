@@ -1,0 +1,1744 @@
+{
+  "versao": "20260623-v15-repo-separado-item-acao",
+  "origem": "OFICIN-IA Checklist V15 separado: item único + ações técnicas por item + entrega + histórico por placa",
+  "acoesPadrao": [
+    {
+      "id": "ok",
+      "label": "OK",
+      "emoji": "✅",
+      "classe": "ok"
+    },
+    {
+      "id": "atencao",
+      "label": "Atenção",
+      "emoji": "⚠️",
+      "classe": "warn"
+    },
+    {
+      "id": "trocar",
+      "label": "Trocar",
+      "emoji": "🔴",
+      "classe": "bad"
+    },
+    {
+      "id": "retificar",
+      "label": "Retificar",
+      "emoji": "🔵",
+      "classe": "info"
+    },
+    {
+      "id": "regular",
+      "label": "Regular",
+      "emoji": "🟠",
+      "classe": "warn"
+    },
+    {
+      "id": "ajustar",
+      "label": "Ajustar",
+      "emoji": "🛠️",
+      "classe": "warn"
+    },
+    {
+      "id": "lubrificar",
+      "label": "Lubrificar",
+      "emoji": "🟣",
+      "classe": "info"
+    },
+    {
+      "id": "limpar",
+      "label": "Limpar",
+      "emoji": "🧽",
+      "classe": "info"
+    },
+    {
+      "id": "revisar",
+      "label": "Revisar",
+      "emoji": "🔎",
+      "classe": "warn"
+    },
+    {
+      "id": "na",
+      "label": "N/A",
+      "emoji": "➖",
+      "classe": "na"
+    }
+  ],
+  "sintomas": [
+    {
+      "id": "freios",
+      "emoji": "🛑",
+      "label": "Freios",
+      "abrir": [
+        "freios",
+        "rodas_pneus"
+      ]
+    },
+    {
+      "id": "suspensao",
+      "emoji": "🛞",
+      "label": "Suspensão",
+      "abrir": [
+        "suspensao_direcao",
+        "rodas_pneus"
+      ]
+    },
+    {
+      "id": "motor",
+      "emoji": "⚙️",
+      "label": "Motor",
+      "abrir": [
+        "motor_cofre",
+        "injecao_alimentacao",
+        "arrefecimento"
+      ]
+    },
+    {
+      "id": "eletrica",
+      "emoji": "💡",
+      "label": "Elétrica",
+      "abrir": [
+        "eletrica_bateria",
+        "iluminacao",
+        "interior_comandos"
+      ]
+    },
+    {
+      "id": "vazamentos",
+      "emoji": "💧",
+      "label": "Vazamentos",
+      "abrir": [
+        "vazamentos_fluidos",
+        "motor_cofre",
+        "transmissao"
+      ]
+    },
+    {
+      "id": "portas",
+      "emoji": "🚪",
+      "label": "Portas e vidros",
+      "abrir": [
+        "portas_borrachas",
+        "vidros_palhetas"
+      ]
+    },
+    {
+      "id": "ar",
+      "emoji": "❄️",
+      "label": "Ar condicionado",
+      "abrir": [
+        "ar_condicionado"
+      ]
+    },
+    {
+      "id": "rodagem",
+      "emoji": "🛣️",
+      "label": "Rodagem",
+      "abrir": [
+        "teste_rodagem",
+        "freios",
+        "suspensao_direcao"
+      ]
+    }
+  ],
+  "secoes": [
+    {
+      "id": "identificacao_visual",
+      "emoji": "🚗",
+      "titulo": "Identificação e visual externo",
+      "hint": "Conferência rápida antes de desmontar.",
+      "itens": [
+        {
+          "id": "placas",
+          "titulo": "Placa dianteira e traseira",
+          "acoes": [
+            "ok",
+            "atencao",
+            "ajustar",
+            "trocar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "chassi_etiquetas",
+          "titulo": "Chassi / etiquetas / lacres",
+          "acoes": [
+            "ok",
+            "atencao",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "parachoques",
+          "titulo": "Parachoques e acabamento externo",
+          "acoes": [
+            "ok",
+            "atencao",
+            "ajustar",
+            "trocar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "retrovisores",
+          "titulo": "Retrovisores",
+          "acoes": [
+            "ok",
+            "atencao",
+            "ajustar",
+            "trocar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "limpeza_geral",
+          "titulo": "Estado geral / limpeza de recebimento",
+          "acoes": [
+            "ok",
+            "atencao",
+            "limpar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "normal",
+          "hint": ""
+        }
+      ]
+    },
+    {
+      "id": "freios",
+      "emoji": "🛑",
+      "titulo": "Freios",
+      "hint": "Retífica, regulagem e troca são ações do item, não itens duplicados.",
+      "itens": [
+        {
+          "id": "pastilha_dianteira",
+          "titulo": "Pastilha de freio dianteira",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "critico",
+          "hint": "Medir desgaste e observar ruído/vibração."
+        },
+        {
+          "id": "pastilha_traseira",
+          "titulo": "Pastilha de freio traseira",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "disco_dianteiro",
+          "titulo": "Disco de freio dianteiro",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "retificar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "critico",
+          "hint": "Conferir espessura mínima antes de retificar."
+        },
+        {
+          "id": "disco_traseiro",
+          "titulo": "Disco de freio traseiro",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "retificar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "tambor_freio",
+          "titulo": "Tambor de freio",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "retificar",
+            "regular",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "lona_sapata",
+          "titulo": "Lona / sapata de freio",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "regular",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "cilindro_roda",
+          "titulo": "Cilindro de roda / pinça",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "limpar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "fluido_freio",
+          "titulo": "Fluido de freio",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "flexiveis_freio",
+          "titulo": "Flexíveis e tubulações de freio",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "freio_mao",
+          "titulo": "Freio de mão / estacionamento",
+          "acoes": [
+            "ok",
+            "atencao",
+            "regular",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        }
+      ]
+    },
+    {
+      "id": "suspensao_direcao",
+      "emoji": "🛞",
+      "titulo": "Suspensão e direção",
+      "hint": "Foco em folgas, ruídos, coifas, buchas e segurança.",
+      "itens": [
+        {
+          "id": "amortecedores_diant",
+          "titulo": "Amortecedores dianteiros",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "amortecedores_tras",
+          "titulo": "Amortecedores traseiros",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "coxim_batente",
+          "titulo": "Coxim, batente e coifa de amortecedor",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "bieletas",
+          "titulo": "Bieletas",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "buchas_bandeja",
+          "titulo": "Buchas e bandejas",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "pivos",
+          "titulo": "Pivôs",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "terminais_direcao",
+          "titulo": "Terminais e axiais de direção",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "caixa_direcao",
+          "titulo": "Caixa de direção",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "regular",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "rolamentos_roda",
+          "titulo": "Rolamentos de roda",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "alinhamento_balanceamento",
+          "titulo": "Alinhamento / balanceamento",
+          "acoes": [
+            "ok",
+            "atencao",
+            "ajustar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "normal",
+          "hint": ""
+        }
+      ]
+    },
+    {
+      "id": "rodas_pneus",
+      "emoji": "🛞",
+      "titulo": "Pneus e rodas",
+      "hint": "Registrar desgaste irregular e risco de segurança.",
+      "itens": [
+        {
+          "id": "pneu_diant_esq",
+          "titulo": "Pneu dianteiro esquerdo",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "pneu_diant_dir",
+          "titulo": "Pneu dianteiro direito",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "pneu_tras_esq",
+          "titulo": "Pneu traseiro esquerdo",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "pneu_tras_dir",
+          "titulo": "Pneu traseiro direito",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "estepe",
+          "titulo": "Estepe, macaco e chave de roda",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "rodas_parafusos",
+          "titulo": "Rodas, parafusos e porcas",
+          "acoes": [
+            "ok",
+            "atencao",
+            "ajustar",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        }
+      ]
+    },
+    {
+      "id": "motor_cofre",
+      "emoji": "⚙️",
+      "titulo": "Motor e cofre",
+      "hint": "Itens de manutenção preventiva e diagnóstico inicial.",
+      "itens": [
+        {
+          "id": "oleo_motor",
+          "titulo": "Óleo do motor",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "filtro_oleo",
+          "titulo": "Filtro de óleo",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "filtro_ar",
+          "titulo": "Filtro de ar",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "limpar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "filtro_combustivel",
+          "titulo": "Filtro de combustível",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "velas",
+          "titulo": "Velas de ignição / aquecimento",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "limpar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "bobinas_cabos",
+          "titulo": "Bobinas e cabos de vela",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "correia_dentada",
+          "titulo": "Correia dentada / corrente",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "correia_acessorios",
+          "titulo": "Correia de acessórios",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "ajustar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "tensores_rolamentos",
+          "titulo": "Tensores e rolamentos",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "valvulas_motor",
+          "titulo": "Válvulas / tuchos / tampa de válvulas",
+          "acoes": [
+            "ok",
+            "atencao",
+            "regular",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "coxins_motor",
+          "titulo": "Coxins do motor/câmbio",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "normal",
+          "hint": ""
+        }
+      ]
+    },
+    {
+      "id": "injecao_alimentacao",
+      "emoji": "⛽",
+      "titulo": "Injeção, alimentação e emissões",
+      "hint": "Usar com scanner/testes quando houver falha ou luz acesa.",
+      "itens": [
+        {
+          "id": "scanner_falhas",
+          "titulo": "Scanner / códigos de falha",
+          "acoes": [
+            "ok",
+            "atencao",
+            "revisar",
+            "limpar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "corpo_borboleta",
+          "titulo": "Corpo de borboleta / TBI",
+          "acoes": [
+            "ok",
+            "atencao",
+            "limpar",
+            "revisar",
+            "trocar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "bicos_injetores",
+          "titulo": "Bicos injetores",
+          "acoes": [
+            "ok",
+            "atencao",
+            "limpar",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "bomba_combustivel",
+          "titulo": "Bomba de combustível",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "sonda_lambda",
+          "titulo": "Sonda lambda / sensores de emissão",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "catalisador_escapamento",
+          "titulo": "Catalisador / escapamento",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        }
+      ]
+    },
+    {
+      "id": "arrefecimento",
+      "emoji": "🌡️",
+      "titulo": "Arrefecimento",
+      "hint": "Evitar superaquecimento e retorno por vazamento.",
+      "itens": [
+        {
+          "id": "liquido_arrefecimento",
+          "titulo": "Líquido de arrefecimento",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "radiador",
+          "titulo": "Radiador",
+          "acoes": [
+            "ok",
+            "atencao",
+            "limpar",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "mangueiras_arref",
+          "titulo": "Mangueiras e abraçadeiras",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "ajustar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "valvula_term",
+          "titulo": "Válvula termostática",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "bomba_agua",
+          "titulo": "Bomba d’água",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "ventoinha",
+          "titulo": "Ventoinha / eletroventilador",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "reservatorio_tampa",
+          "titulo": "Reservatório e tampa",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "normal",
+          "hint": ""
+        }
+      ]
+    },
+    {
+      "id": "vazamentos_fluidos",
+      "emoji": "💧",
+      "titulo": "Vazamentos e fluidos",
+      "hint": "Registrar local, fluido e gravidade.",
+      "itens": [
+        {
+          "id": "vazamento_oleo_motor",
+          "titulo": "Vazamento de óleo do motor",
+          "acoes": [
+            "ok",
+            "atencao",
+            "revisar",
+            "trocar",
+            "limpar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "vazamento_cambio",
+          "titulo": "Vazamento de câmbio / diferencial",
+          "acoes": [
+            "ok",
+            "atencao",
+            "revisar",
+            "trocar",
+            "limpar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "vazamento_arref",
+          "titulo": "Vazamento de arrefecimento",
+          "acoes": [
+            "ok",
+            "atencao",
+            "revisar",
+            "trocar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "fluido_direcao",
+          "titulo": "Fluido direção hidráulica",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "fluido_cambio",
+          "titulo": "Fluido de câmbio / transmissão",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "normal",
+          "hint": ""
+        }
+      ]
+    },
+    {
+      "id": "transmissao",
+      "emoji": "⚙️",
+      "titulo": "Transmissão, embreagem e semi-eixos",
+      "hint": "Ruído, tranco, patinação e coifas.",
+      "itens": [
+        {
+          "id": "embreagem",
+          "titulo": "Embreagem",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "regular",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "cambio",
+          "titulo": "Câmbio manual/automático",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "regular",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "semieixos",
+          "titulo": "Semi-eixos / homocinéticas",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "coifas_homocinetica",
+          "titulo": "Coifas da homocinética",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "suportes_cambio",
+          "titulo": "Suportes/coxim do câmbio",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "normal",
+          "hint": ""
+        }
+      ]
+    },
+    {
+      "id": "eletrica_bateria",
+      "emoji": "⚡",
+      "titulo": "Elétrica e bateria",
+      "hint": "Conferência rápida com foco em partida e carga.",
+      "itens": [
+        {
+          "id": "bateria",
+          "titulo": "Bateria",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "limpar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "alternador",
+          "titulo": "Alternador / carga",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "motor_partida",
+          "titulo": "Motor de partida",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "fusives_reles",
+          "titulo": "Fusíveis e relés",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "aterramentos",
+          "titulo": "Aterramentos / chicotes visíveis",
+          "acoes": [
+            "ok",
+            "atencao",
+            "ajustar",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "normal",
+          "hint": ""
+        }
+      ]
+    },
+    {
+      "id": "iluminacao",
+      "emoji": "💡",
+      "titulo": "Iluminação e sinalização",
+      "hint": "Conferência de segurança e legalidade.",
+      "itens": [
+        {
+          "id": "farol_baixo_alto",
+          "titulo": "Farol baixo/alto",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "regular",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "lanternas",
+          "titulo": "Lanternas / posição",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "setas_pisca",
+          "titulo": "Setas e pisca-alerta",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "luz_freio",
+          "titulo": "Luz de freio",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "luz_re",
+          "titulo": "Luz de ré / placa",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "luz_painel",
+          "titulo": "Luzes de painel / alertas",
+          "acoes": [
+            "ok",
+            "atencao",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "normal",
+          "hint": ""
+        }
+      ]
+    },
+    {
+      "id": "portas_borrachas",
+      "emoji": "🚪",
+      "titulo": "Portas, fechaduras e borrachas",
+      "hint": "Regular e lubrificar são ações, não novos itens.",
+      "itens": [
+        {
+          "id": "fechadura_motorista",
+          "titulo": "Fechadura porta motorista",
+          "acoes": [
+            "ok",
+            "atencao",
+            "regular",
+            "lubrificar",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "fechadura_passageiro",
+          "titulo": "Fechadura porta passageiro",
+          "acoes": [
+            "ok",
+            "atencao",
+            "regular",
+            "lubrificar",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "dobradicas_portas",
+          "titulo": "Dobradiças e limitadores",
+          "acoes": [
+            "ok",
+            "atencao",
+            "regular",
+            "lubrificar",
+            "trocar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "macanetas",
+          "titulo": "Maçanetas internas/externas",
+          "acoes": [
+            "ok",
+            "atencao",
+            "ajustar",
+            "trocar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "borrachas_portas",
+          "titulo": "Borrachas de porta e vedação",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "ajustar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "porta_malas_capô",
+          "titulo": "Fechamento capô/porta-malas",
+          "acoes": [
+            "ok",
+            "atencao",
+            "regular",
+            "lubrificar",
+            "trocar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        }
+      ]
+    },
+    {
+      "id": "vidros_palhetas",
+      "emoji": "🪟",
+      "titulo": "Vidros, limpadores e comandos",
+      "hint": "Itens de conforto e segurança em chuva.",
+      "itens": [
+        {
+          "id": "vidro_motorista",
+          "titulo": "Vidro porta motorista",
+          "acoes": [
+            "ok",
+            "atencao",
+            "regular",
+            "lubrificar",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "maquina_vidro",
+          "titulo": "Máquina/motor do vidro",
+          "acoes": [
+            "ok",
+            "atencao",
+            "regular",
+            "lubrificar",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "palhetas",
+          "titulo": "Palhetas limpador",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "limpar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "esguicho",
+          "titulo": "Esguicho e reservatório limpador",
+          "acoes": [
+            "ok",
+            "atencao",
+            "limpar",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "desembacador",
+          "titulo": "Desembaçador traseiro",
+          "acoes": [
+            "ok",
+            "atencao",
+            "revisar",
+            "trocar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        }
+      ]
+    },
+    {
+      "id": "ar_condicionado",
+      "emoji": "❄️",
+      "titulo": "Ar condicionado e ventilação",
+      "hint": "Checar funcionamento, odor, fluxo e vazamentos.",
+      "itens": [
+        {
+          "id": "filtro_cabine",
+          "titulo": "Filtro de cabine / ar condicionado",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "limpar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "ventilador_interno",
+          "titulo": "Ventilador interno",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "compressor_ac",
+          "titulo": "Compressor do ar condicionado",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "gas_ac",
+          "titulo": "Carga de gás / vazamento no sistema",
+          "acoes": [
+            "ok",
+            "atencao",
+            "revisar",
+            "trocar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "higienizacao_ac",
+          "titulo": "Higienização do ar condicionado",
+          "acoes": [
+            "ok",
+            "atencao",
+            "limpar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        }
+      ]
+    },
+    {
+      "id": "interior_comandos",
+      "emoji": "🎛️",
+      "titulo": "Interior, comandos e segurança",
+      "hint": "Finalizar conferência do habitáculo.",
+      "itens": [
+        {
+          "id": "cintos",
+          "titulo": "Cintos de segurança",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "buzina",
+          "titulo": "Buzina",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "limpador_comando",
+          "titulo": "Comando limpador/seta/farol",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "travas_eletricas",
+          "titulo": "Travas elétricas / alarme",
+          "acoes": [
+            "ok",
+            "atencao",
+            "ajustar",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "bancos_trilhos",
+          "titulo": "Bancos e trilhos",
+          "acoes": [
+            "ok",
+            "atencao",
+            "ajustar",
+            "lubrificar",
+            "trocar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        }
+      ]
+    },
+    {
+      "id": "teste_rodagem",
+      "emoji": "🛣️",
+      "titulo": "Teste de rodagem e entrega técnica",
+      "hint": "Última validação antes de liberar o veículo.",
+      "itens": [
+        {
+          "id": "partida_lenta",
+          "titulo": "Partida, marcha lenta e aceleração",
+          "acoes": [
+            "ok",
+            "atencao",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "ruidos_rodagem",
+          "titulo": "Ruídos em rodagem",
+          "acoes": [
+            "ok",
+            "atencao",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "frenagem_teste",
+          "titulo": "Frenagem em teste",
+          "acoes": [
+            "ok",
+            "atencao",
+            "regular",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "direcao_teste",
+          "titulo": "Direção em teste",
+          "acoes": [
+            "ok",
+            "atencao",
+            "regular",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "temperatura_teste",
+          "titulo": "Temperatura em rodagem",
+          "acoes": [
+            "ok",
+            "atencao",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "critico",
+          "hint": ""
+        },
+        {
+          "id": "conferencia_final",
+          "titulo": "Conferência final visual",
+          "acoes": [
+            "ok",
+            "atencao",
+            "limpar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "importante",
+          "hint": ""
+        }
+      ]
+    }
+  ]
+}
