@@ -1,8 +1,8 @@
 {
-  "name": "oficin-ia-checklist-v15-repo-separado",
-  "version": "15.1.0",
+  "name": "oficin-ia-checklist-v15-github-pages-node22",
+  "version": "15.3.0",
   "private": true,
-  "description": "OFICIN-IA Checklist separado do SaaS, mesmo Firebase, APK próprio e abertura direta no checklist.",
+  "description": "OFICIN-IA Checklist separado para GitHub Pages, mesmo Firebase, APK próprio e abertura direta no checklist. Workflow corrigido para Node 22.",
   "scripts": {
     "prepare:apk": "node scripts/prepare-apk.js",
     "cap:add": "npx cap add android",
@@ -16,5 +16,8 @@
   "devDependencies": {
     "@capacitor/assets": "latest",
     "@capacitor/cli": "latest"
+  },
+  "engines": {
+    "node": ">=22.0.0"
   }
 }

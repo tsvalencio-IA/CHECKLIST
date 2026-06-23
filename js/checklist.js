@@ -541,7 +541,7 @@ function renderManagerItems(sec){
   $$('[data-del-item]',box).forEach(b=>b.onclick=()=>{ const it=sec.itens.find(x=>x.id===b.dataset.delItem); if(!confirm('Excluir item da seção?\n'+it.titulo)) return; sec.itens=sec.itens.filter(x=>x.id!==it.id); delete state.answers[it.id]; saveModelRemote({tipo:'excluir_item',secao:sec.id,item:it.id,por:state.session?.name||'',em:nowISO()}); renderManagerItems(sec); renderSections(); });
 }
 
-function abrirSaas(){ const base=APP.saasBaseUrl||''; window.open(base,'_blank','noopener'); }
+function abrirSaas(){ const base=(APP.saasBaseUrl||'').trim(); if(!base){ toast('URL do SaaS não configurada. O Checklist funciona separado no GitHub Pages e no APK.'); return; } window.open(base,'_blank','noopener'); }
 async function instalar(){ if(state.installPrompt){ state.installPrompt.prompt(); try{ await state.installPrompt.userChoice; }catch(e){} state.installPrompt=null; return; } toast('Para app real: gere o APK no GitHub Actions e instale o app Checklist. No navegador: menu ⋮ > Instalar app ou Adicionar à tela inicial.'); }
 function bind(){
   $('btnLogin')?.addEventListener('click',login); $('loginPwd')?.addEventListener('keydown',e=>{if(e.key==='Enter') login();});

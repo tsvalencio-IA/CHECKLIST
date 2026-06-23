@@ -1,9 +1,9 @@
 'use strict';
-const CACHE_NAME = 'oficin-ia-checklist-v15.1.0';
+const CACHE_NAME = 'oficin-ia-checklist-v15.2.0-github-pages';
 const CORE = [
   './', './index.html', './checklist.html', './login.html', './manifest.webmanifest',
   './js/config.js', './js/checklist.js', './data/checklist-model.json',
-  './assets/icons/checklist-192.png', './assets/icons/checklist-512.png'
+  './assets/icons/checklist-192.png', './assets/icons/checklist-512.png', './assets/icon.png'
 ];
 self.addEventListener('install', event => {
   self.skipWaiting();

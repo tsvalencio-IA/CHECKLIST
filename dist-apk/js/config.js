@@ -1,11 +1,11 @@
 'use strict';
 
 window.CHECKLIST_APP = {
-  version: '15.0.0',
+  version: '15.3.0',
   appName: 'OFICIN-IA Checklist',
-  appId: 'br.com.thiaguinhosolucoes.oficinia.checklist.v15',
+  appId: 'br.com.thiaguinhosolucoes.oficinia.checklist.v15githubpages',
   footer: 'Powered by thIAguinho Soluções Digitais',
-  saasBaseUrl: 'https://oficin-ia-com-ia.vercel.app',
+  saasBaseUrl: '', // opcional: coloque aqui a URL do SaaS no GitHub Pages, se quiser manter o botão Abrir SaaS
   firebaseConfig: {
     apiKey: 'AIzaSyBqIuCsHHuy_f-mBWV4JBkbyOorXpqQvqg',
     authDomain: 'hub-thiaguinho.firebaseapp.com',
