@@ -234,18 +234,37 @@ async function saveModelRemote(auditoria={}){
 
 function itemMap(){ const m={}; (state.model?.secoes||[]).forEach(sec => (sec.itens||[]).forEach(it => { m[it.id]={...it, secaoId:sec.id, secaoTitulo:sec.titulo, secaoEmoji:sec.emoji}; })); return m; }
 function actionInfo(id){ return (state.model?.acoesPadrao||[]).find(a=>a.id===id) || {id,label:id,emoji:'•',classe:'info'}; }
-function countRequired(){ let total=0; (state.model?.secoes||[]).forEach(sec => (sec.itens||[]).forEach(it=>{ if(it.obrigatorio!==false) total++; })); return total; }
+function allChecklistItems(){
+  const out=[];
+  (state.model?.secoes||[]).forEach(sec => (sec.itens||[]).forEach(it => out.push({...it, secaoId:sec.id, secaoTitulo:sec.titulo})));
+  return out;
+}
+function sectionStats(sec){
+  const items=sec?.itens||[];
+  const done=items.filter(it=>!!state.answers[it.id]?.acao).length;
+  const pending=Math.max(items.length-done,0);
+  const firstPending=items.find(it=>!state.answers[it.id]?.acao);
+  return {total:items.length, done, pending, complete:items.length>0 && pending===0, firstPending};
+}
+function firstPendingItem(){
+  for(const sec of (state.model?.secoes||[])){
+    const st=sectionStats(sec);
+    if(st.pending>0) return {sec, item:st.firstPending, pending:st.pending};
+  }
+  return null;
+}
 function stats(){
-  const allItems=itemMap(); const answers=Object.values(state.answers||{}); const req=countRequired();
-  const answeredRequired=Object.values(allItems).filter(it => it.obrigatorio!==false && state.answers[it.id]?.acao).length;
-  const pending=Math.max(req-answeredRequired,0);
+  const allItems=allChecklistItems(); const answers=Object.values(state.answers||{});
+  const total=allItems.length;
+  const answered=allItems.filter(it => state.answers[it.id]?.acao).length;
+  const pending=Math.max(total-answered,0);
   return {
     ok:answers.filter(a=>a.acao==='ok').length,
     atencao:answers.filter(a=>a.acao==='atencao').length,
     trocar:answers.filter(a=>a.acao==='trocar').length,
     tecnicas:answers.filter(a=>ACTIONS_FINAL.has(a.acao) && a.acao!=='atencao' && a.acao!=='trocar').length,
     pending,
-    percent:req?Math.round((answeredRequired/req)*100):0
+    percent:total?Math.round((answered/total)*100):0
   };
 }
 function saveDraft(){
@@ -271,7 +290,24 @@ function go(screen){
   $('btnNext').textContent = screen==='screenResumo' ? 'Entrega ➜' : screen==='screenEntrega' ? 'Finalizar ✅' : 'Avançar ➜';
   renderAll(); window.scrollTo({top:0,behavior:'smooth'});
 }
-function next(){ if(state.screen==='screenInicio') go('screenChecklist'); else if(state.screen==='screenChecklist') go('screenMidia'); else if(state.screen==='screenMidia') { renderResumo(); go('screenResumo'); } else if(state.screen==='screenResumo') abrirEntrega(); else if(state.screen==='screenEntrega') { toast('Checklist concluído. Salve/exports ou inicie novo.'); } else go('screenInicio'); }
+function next(){
+  if(state.screen==='screenInicio') go('screenChecklist');
+  else if(state.screen==='screenChecklist') {
+    const pend=firstPendingItem();
+    if(pend){
+      state.activeSection=pend.sec.id;
+      renderSections(); renderProgress(); saveDraft();
+      setTimeout(()=>document.querySelector(`[data-section="${pend.sec.id}"]`)?.scrollIntoView({behavior:'smooth',block:'start'}),80);
+      toast(`Ainda falta marcar ${pend.pending} item(ns) em ${pend.sec.titulo}. Marque OK, Atenção, Trocar, Revisar ou N/A.`);
+      return;
+    }
+    go('screenMidia');
+  }
+  else if(state.screen==='screenMidia') { renderResumo(); go('screenResumo'); }
+  else if(state.screen==='screenResumo') abrirEntrega();
+  else if(state.screen==='screenEntrega') { toast('Checklist concluído. Salve/exports ou inicie novo.'); }
+  else go('screenInicio');
+}
 function back(){ if(state.screen==='screenEntrega') go('screenResumo'); else if(state.screen==='screenResumo') go('screenMidia'); else if(state.screen==='screenMidia') go('screenChecklist'); else if(state.screen==='screenChecklist') go('screenInicio'); else go('screenInicio'); }
 
 function renderAll(){ renderSymptoms(); renderSections(); renderProgress(); renderPhotos(); renderDelivery(); }
@@ -280,6 +316,7 @@ function renderProgress(){
   if($('progressBar')) $('progressBar').style.width=s.percent+'%';
   if($('percentPill')) $('percentPill').textContent=s.percent+'% concluído';
   if($('kOk')) $('kOk').textContent=s.ok; if($('kAt')) $('kAt').textContent=s.atencao; if($('kTrocar')) $('kTrocar').textContent=s.trocar; if($('kAcoes')) $('kAcoes').textContent=s.tecnicas; if($('kPend')) $('kPend').textContent=s.pending;
+  if($('btnNext') && state.screen==='screenChecklist') $('btnNext').textContent = s.pending ? `Pendentes (${s.pending})` : 'Avançar ➜';
 }
 function renderSymptoms(){
   const box=$('symptoms'); if(!box || !state.model) return;
@@ -293,16 +330,19 @@ function renderSections(){
     const items=(sec.itens||[]).filter(it=>!q || norm(it.titulo+' '+it.hint+' '+sec.titulo).includes(q));
     if(q && !items.length) return '';
     const done=items.filter(it=>state.answers[it.id]?.acao).length;
+    const fullStats=sectionStats(sec);
     const open = q || state.activeSection===sec.id;
+    const footer = q ? '' : `<div class="section-footer ${fullStats.complete?'done':''}"><div><b>${fullStats.complete?'✅ Seção completa':'⚠️ Falta marcar '+fullStats.pending+' item(ns)'}</b><small>${fullStats.complete?'Você pode avançar quando quiser.':'Marque cada item desta seção como OK, Atenção, Trocar, Revisar ou N/A. O app não muda de seção sozinho.'}</small></div><button class="btn ${fullStats.complete?'ok':'secondary'} small" data-next-section="${esc(sec.id)}" ${fullStats.complete?'':'disabled'} type="button">${fullStats.complete?'Próxima seção ➜':'Complete a seção'}</button></div>`;
     return `<div class="section ${open?'open':''}" data-section="${esc(sec.id)}">
       <div class="section-head" data-open-section="${esc(sec.id)}"><h3>${esc(sec.emoji||'🔧')} ${esc(sec.titulo)}</h3><div style="display:flex;gap:7px;align-items:center"><span class="pill">${done}/${items.length}</span>${isGestor()?`<button class="btn secondary small" data-manage="${esc(sec.id)}" type="button">✏️ Editar</button>`:''}</div></div>
-      <div class="section-body"><div class="notice">${esc(sec.hint||'')}</div>${items.map(it=>renderItem(sec,it)).join('')}</div>
+      <div class="section-body"><div class="notice">${esc(sec.hint||'')}</div>${items.map(it=>renderItem(sec,it)).join('')}${footer}</div>
     </div>`;
   }).join('');
   box.innerHTML=html || '<div class="notice warn">Nenhum item encontrado na pesquisa.</div>';
   $$('[data-open-section]').forEach(h=>h.addEventListener('click',e=>{ if(e.target.closest('[data-manage]')) return; state.activeSection=h.dataset.openSection; renderSections(); saveDraft(); }));
   $$('[data-manage]').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); openManager(b.dataset.manage); }));
   $$('[data-action]').forEach(b=>b.addEventListener('click',()=>setAction(b.dataset.item,b.dataset.action)));
+  $$('[data-next-section]').forEach(b=>b.addEventListener('click',()=>goNextSection(b.dataset.nextSection)));
   $$('[data-obs]').forEach(t=>t.addEventListener('input',()=>{ ensureAnswer(t.dataset.obs).obs=t.value; saveDraft(); renderProgress(); }));
   $$('[data-dictate]').forEach(b=>b.addEventListener('click',()=>dictateToItem(b.dataset.dictate)));
   $$('[data-photo-item]').forEach(inp=>inp.addEventListener('change',e=>addItemPhotos(inp.dataset.photoItem,e.target.files)));
@@ -325,23 +365,37 @@ function ensureAnswer(itemId){
 function setAction(itemId,action){
   const im=itemMap()[itemId]||{}; const ans=ensureAnswer(itemId);
   ans.item=im.titulo||itemId; ans.secao=im.secaoTitulo||''; ans.secaoId=im.secaoId||''; ans.acao=action; ans.acaoLabel=actionInfo(action).label; ans.updatedAt=nowISO(); ans.updatedBy=state.session?.name||'';
-  saveDraft(); renderSections(); renderProgress(); autoAdvanceSection(im.secaoId);
+  saveDraft();
+  const sec=(state.model.secoes||[]).find(s=>s.id===im.secaoId);
+  const completedAfter = sec ? sectionStats(sec).complete : false;
+  renderSections(); renderProgress();
+  if(completedAfter) toast('Seção completa. Ela não vai mudar sozinha; toque em “Próxima seção” para avançar.');
 }
-function autoAdvanceSection(secId){
-  const sec=(state.model.secoes||[]).find(s=>s.id===secId); if(!sec) return;
-  const obrig=(sec.itens||[]).filter(i=>i.obrigatorio!==false);
-  const all=obrig.length && obrig.every(i=>state.answers[i.id]?.acao);
-  if(!all) return;
-  const idx=(state.model.secoes||[]).findIndex(s=>s.id===secId);
-  const nextSec=state.model.secoes[idx+1];
-  if(nextSec){ state.activeSection=nextSec.id; setTimeout(()=>{ renderSections(); document.querySelector(`[data-section="${nextSec.id}"]`)?.scrollIntoView({behavior:'smooth',block:'start'}); },250); }
+function goNextSection(secId){
+  const secs=state.model?.secoes||[];
+  const sec=secs.find(s=>s.id===secId);
+  if(!sec) return;
+  const st=sectionStats(sec);
+  if(!st.complete){
+    state.activeSection=sec.id; renderSections(); renderProgress();
+    toast(`Falta marcar ${st.pending} item(ns) nesta seção. Use OK, Atenção, Trocar, Revisar ou N/A.`);
+    return;
+  }
+  const idx=secs.findIndex(s=>s.id===secId);
+  const nextSec=secs[idx+1];
+  if(nextSec){
+    state.activeSection=nextSec.id; saveDraft(); renderSections(); renderProgress();
+    setTimeout(()=>document.querySelector(`[data-section="${nextSec.id}"]`)?.scrollIntoView({behavior:'smooth',block:'start'}),80);
+  } else {
+    toast('Todas as seções foram preenchidas. Você já pode avançar para relato, fotos e relatório.');
+  }
 }
 
 function payloadBase(){
   const placa=placaNorm($('placa')?.value||'');
   const allItems=itemMap();
   const itens=Object.values(state.answers).map(a=>({...a, fotos:(state.itemPhotos[a.id]||[]).length, criticidade:allItems[a.id]?.criticidade||'normal', obrigatorio:allItems[a.id]?.obrigatorio!==false}));
-  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15', versao:state.model?.versao||'v15', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef:($('osRef')?.value||'').trim(), km:($('km')?.value||'').trim(), responsavel:state.session?.name||'', responsavelPerfil:state.session?.role||'', relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:state.generalPhotos.length, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
+  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15-8', versao:state.model?.versao||'v15.8', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef:($('osRef')?.value||'').trim(), km:($('km')?.value||'').trim(), responsavel:state.session?.name||'', responsavelPerfil:state.session?.role||'', relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:state.generalPhotos.length, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
 }
 async function saveChecklist(){
   if(!placaNorm($('placa')?.value||'')) { toast('Informe a placa antes de salvar.'); go('screenInicio'); return null; }
