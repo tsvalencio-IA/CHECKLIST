@@ -1,21 +1,21 @@
 {
-  "name": "oficin-ia-checklist-v15-github-pages-node22",
-  "version": "15.3.0",
+  "name": "oficin-ia-checklist-v15-6-github-pages-apk-print-a4-2folhas",
+  "version": "15.6.0",
   "private": true,
-  "description": "OFICIN-IA Checklist separado para GitHub Pages, mesmo Firebase, APK próprio e abertura direta no checklist. Workflow corrigido para Node 22.",
+  "description": "OFICIN-IA Checklist separado para GitHub Pages com APK próprio. Workflow robusto sem depender de scripts npm antigos.",
   "scripts": {
     "prepare:apk": "node scripts/prepare-apk.js",
+    "android:icons": "node scripts/generate-android-icons.js",
     "cap:add": "npx cap add android",
     "cap:sync": "npx cap sync android",
-    "build:android": "npm run prepare:apk && if [ ! -d android ]; then npx cap add android; fi && npx cap sync android && npx capacitor-assets generate --android --assetPath assets && cd android && chmod +x ./gradlew && ./gradlew assembleDebug"
+    "build:android": "npm run prepare:apk && if [ ! -d android ]; then npx cap add android; fi && npx cap sync android && npm run android:icons && cd android && chmod +x ./gradlew && ./gradlew assembleDebug"
   },
   "dependencies": {
-    "@capacitor/android": "latest",
-    "@capacitor/core": "latest"
+    "@capacitor/android": "6.2.1",
+    "@capacitor/core": "6.2.1"
   },
   "devDependencies": {
-    "@capacitor/assets": "latest",
-    "@capacitor/cli": "latest"
+    "@capacitor/cli": "6.2.1"
   },
   "engines": {
     "node": ">=22.0.0"

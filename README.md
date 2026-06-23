@@ -1,4 +1,4 @@
-# OFICIN-IA Checklist V15.3 — GitHub Pages + APK real
+# OFICIN-IA Checklist V15.4 — GitHub Pages + APK real
 
 Pacote separado do SaaS principal, feito para subir em **um novo repositório GitHub** e publicar pelo **GitHub Pages**.
 
@@ -58,6 +58,36 @@ saasBaseUrl: 'https://SEU-USUARIO.github.io/SEU-REPOSITORIO-DO-SAAS/'
 Se deixar vazio, o botão apenas avisa que a URL do SaaS não foi configurada.
 
 
-## Correção V15.3 — GitHub Actions
+## Correção V15.4 — GitHub Actions
 
-O workflow usa `actions/setup-node@v4` com `node-version: 22`, porque o Capacitor CLI atual exige Node.js 22 ou superior. O erro `The Capacitor CLI requires NodeJS >=22.0.0` fica corrigido nesta versão.
+O workflow usa `actions/setup-node@v4` com `node-version: 22.x`, porque o Capacitor CLI atual exige Node.js 22 ou superior. O erro `The Capacitor CLI requires NodeJS >=22.0.0` fica corrigido nesta versão.
+
+
+## Correção V15.4
+
+Esta versão fixa o Capacitor em `6.2.1` e remove o uso de `latest`, para evitar erro do GitHub Actions quando o `npx cap add android` exigir Node mais novo do que o runner realmente carregou. O workflow também imprime `node -v` antes do build.
+
+## Correção V15.5/V15.6 — GitHub Actions sem erro de script antigo
+
+Esta versão troca o workflow do APK por um fluxo mais robusto. O arquivo `.github/workflows/build-checklist-apk.yml` não depende mais do script antigo do repositório para aplicar ícone. Ele força o `package.json` correto durante a Action e aplica os ícones Android por Node inline.
+
+Ao subir no GitHub, substitua todos os arquivos antigos, principalmente:
+
+- `.github/workflows/build-checklist-apk.yml`
+- `package.json`
+- `scripts/generate-android-icons.js`
+- `scripts/prepare-apk.js`
+- `capacitor.config.json`
+
+Se o repositório já tinha arquivos anteriores, apague/substitua antes de rodar a Action novamente.
+
+
+## Correção V15.6 — impressão manual em até 2 folhas A4
+
+A impressão manual do mecânico foi compactada para o padrão oficina em até 2 páginas:
+
+- cabeçalho curto com placa, O.S., KM, data, cliente, veículo e mecânico;
+- checklist distribuído em 4 colunas, 2 colunas por página;
+- marcações compactas: OK, AT, TR, R/R, REV e N/A;
+- assinatura do técnico, gestor/conferente e cliente na segunda página;
+- sem cartões grandes e sem espaçamento de tela mobile na impressão.

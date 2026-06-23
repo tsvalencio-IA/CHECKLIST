@@ -1,0 +1,137 @@
+name: Build Checklist APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Show environment
+        run: |
+          node -v
+          npm -v
+          java -version
+          ls -la
+
+      - name: Force correct Capacitor package
+        run: |
+          rm -f package-lock.json
+          node - <<'NODE'
+          const fs = require('fs');
+          const pkg = {
+            name: 'oficin-ia-checklist-v15-6-github-pages-apk-print-a4-2folhas',
+            version: '15.6.0',
+            private: true,
+            description: 'OFICIN-IA Checklist separado para GitHub Pages com APK próprio.',
+            scripts: {
+              'prepare:apk': 'node scripts/prepare-apk.js',
+              'android:icons': 'node scripts/generate-android-icons.js',
+              'build:android': 'npm run prepare:apk && if [ ! -d android ]; then npx cap add android; fi && npx cap sync android && npm run android:icons && cd android && chmod +x ./gradlew && ./gradlew assembleDebug'
+            },
+            dependencies: {
+              '@capacitor/android': '6.2.1',
+              '@capacitor/core': '6.2.1'
+            },
+            devDependencies: {
+              '@capacitor/cli': '6.2.1'
+            },
+            engines: {
+              node: '>=22.0.0'
+            }
+          };
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          console.log(fs.readFileSync('package.json','utf8'));
+          NODE
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Prepare web bundle
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const root = process.cwd();
+          const out = path.join(root, 'dist-apk');
+          const keep = ['index.html','checklist.html','login.html','manifest.webmanifest','service-worker.js','js','data','assets'];
+          function rm(p){ if(fs.existsSync(p)) fs.rmSync(p,{recursive:true,force:true}); }
+          function cp(src,dst){
+            if(!fs.existsSync(src)) throw new Error('Arquivo obrigatório não encontrado: '+src);
+            const st=fs.statSync(src);
+            if(st.isDirectory()){
+              fs.mkdirSync(dst,{recursive:true});
+              for(const f of fs.readdirSync(src)) cp(path.join(src,f), path.join(dst,f));
+            } else {
+              fs.mkdirSync(path.dirname(dst),{recursive:true});
+              fs.copyFileSync(src,dst);
+            }
+          }
+          rm(out);
+          fs.mkdirSync(out,{recursive:true});
+          for(const name of keep) cp(path.join(root,name), path.join(out,name));
+          console.log('dist-apk preparado:', out);
+          NODE
+
+      - name: Add Android project
+        run: |
+          npx cap --version
+          if [ ! -d android ]; then npx cap add android; fi
+          npx cap sync android
+
+      - name: Apply Android launcher icon
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const root = process.cwd();
+          const androidRes = path.join(root, 'android', 'app', 'src', 'main', 'res');
+          const candidates = [
+            ['mipmap-mdpi', 'checklist-72.png'],
+            ['mipmap-hdpi', 'checklist-96.png'],
+            ['mipmap-xhdpi', 'checklist-144.png'],
+            ['mipmap-xxhdpi', 'checklist-192.png'],
+            ['mipmap-xxxhdpi', 'checklist-512.png']
+          ];
+          for (const [folder, file] of candidates) {
+            const src = path.join(root, 'assets', 'icons', file);
+            if (!fs.existsSync(src)) throw new Error('Ícone não encontrado: ' + src);
+            const dir = path.join(androidRes, folder);
+            fs.mkdirSync(dir, { recursive: true });
+            for (const name of ['ic_launcher.png','ic_launcher_round.png','ic_launcher_foreground.png']) {
+              fs.copyFileSync(src, path.join(dir, name));
+            }
+          }
+          const valuesDir = path.join(androidRes, 'values');
+          fs.mkdirSync(valuesDir, { recursive: true });
+          fs.writeFileSync(path.join(valuesDir, 'strings.xml'), `<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <string name="app_name">Checklist Inteligente</string>\n    <string name="title_activity_main">Checklist Inteligente</string>\n    <string name="package_name">br.com.thiaguinhosolucoes.oficinia.checklist.v15githubpages</string>\n    <string name="custom_url_scheme">br.com.thiaguinhosolucoes.oficinia.checklist.v15githubpages</string>\n</resources>\n`);
+          console.log('Ícones Android aplicados sem npm script.');
+          NODE
+
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OFICIN-IA-CHECKLIST-V15-6-GITHUB-PAGES-APK-PRINT-A4-2FOLHAS
+          path: android/app/build/outputs/apk/debug/app-debug.apk

@@ -477,15 +477,90 @@ function gerarXLSX(kind='checklist'){
 }
 function gerarConsultaXLSX(){ if(!window.XLSX) return toast('Biblioteca XLSX não carregou.'); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(state.consulta.map(c=>({Placa:c.placa,OS:c.osRef,Responsavel:c.responsavel,Data:fmtDateTime(c.criadoEm),OK:c.stats?.ok||0,Atencao:c.stats?.atencao||0,Trocar:c.stats?.trocar||0}))), 'Consulta'); XLSX.writeFile(wb,'consulta_checklists.xlsx'); }
 function baixarJSON(){ const p=payloadBase(); downloadText(`checklist_${p.placa||'veiculo'}.json`,JSON.stringify(p,null,2)); }
-function printA4(entrega=false){
-  const base=payloadBase(); const itens=entrega?getCriticalItems():base.itens.filter(i=>i.acao);
-  const w=window.open('','_blank'); if(!w) return toast('Bloqueador impediu impressão.');
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Checklist A4</title><style>@page{size:A4;margin:8mm}body{font-family:Arial,sans-serif;color:#111}h1{font-size:18px;margin:0 0 6px}.head{border:2px solid #111;padding:8px;margin-bottom:8px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}.sec{border:1px solid #111;margin:5px 0;padding:5px;break-inside:avoid}.sec b{font-size:12px}.row{font-size:10px;border-top:1px solid #ddd;padding:3px 0}.box{display:inline-block;width:10px;height:10px;border:1px solid #111;margin-right:4px}.sign{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:20px}.line{border-top:1px solid #111;text-align:center;padding-top:4px;font-size:10px}</style></head><body><div class="head"><h1>${entrega?'CHECKLIST DE ENTREGA':'CHECKLIST TÉCNICO MANUAL'} — OFICIN-IA</h1><div class="grid"><div>Placa: <b>${esc(base.placa||'________')}</b></div><div>O.S.: <b>${esc(base.osRef||'________')}</b></div><div>KM: <b>${esc(base.km||'________')}</b></div><div>Data: <b>${fmtDate(new Date())}</b></div><div>Responsável: <b>${esc(base.responsavel||'________')}</b></div><div>Oficina: <b>${esc(base.oficinaNome||'________')}</b></div></div></div>`);
-  if(!entrega){ (state.model.secoes||[]).forEach(sec=>{ w.document.write(`<div class="sec"><b>${esc(sec.emoji||'')} ${esc(sec.titulo)}</b>`); (sec.itens||[]).slice(0,12).forEach(it=>w.document.write(`<div class="row"><span class="box"></span>${esc(it.titulo)} &nbsp; OK □ Atenção □ Trocar □ Retificar/Regular □ N/A □</div>`)); w.document.write('</div>'); }); }
-  else { itens.forEach(i=>w.document.write(`<div class="sec"><b>${esc(i.secao)}</b><div class="row"><span class="box"></span>${esc(i.item)} — ${esc(i.acaoLabel)} &nbsp; Executado □ Conferido □ Pendente □</div></div>`)); }
-  w.document.write(`<div class="sign"><div class="line">Responsável técnico</div><div class="line">Gestor / Conferente</div></div><p style="font-size:10px;text-align:center;margin-top:12px">${esc(APP.footer||'Powered by thIAguinho Soluções Digitais')}</p></body></html>`);
-  w.document.close(); setTimeout(()=>w.print(),300);
+function splitIntoColumns(sections, totalCols=4){
+  const cols=Array.from({length:totalCols},()=>({peso:0,secoes:[]}));
+  (sections||[]).forEach(sec=>{
+    const itens=sec.itens||[];
+    const peso=1+itens.length;
+    cols.sort((a,b)=>a.peso-b.peso);
+    cols[0].secoes.push({...sec,itens});
+    cols[0].peso+=peso;
+  });
+  return cols;
 }
+function printA4(entrega=false){
+  const base=payloadBase();
+  const w=window.open('','_blank');
+  if(!w) return toast('Bloqueador impediu impressão.');
+
+  const css=`
+    @page{size:A4 portrait;margin:5mm}
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Arial,Helvetica,sans-serif}
+    body{font-size:7.4px;line-height:1.08}
+    .page{width:200mm;min-height:287mm;page-break-after:always;padding:0;overflow:hidden}
+    .page:last-child{page-break-after:auto}
+    .head{border:1.4px solid #111;padding:3mm 3mm 2mm;margin-bottom:2mm}
+    h1{font-size:13px;line-height:1;margin:0 0 2mm;text-align:center;letter-spacing:.3px}
+    .meta{display:grid;grid-template-columns:1.1fr .8fr .7fr .85fr;gap:1.2mm 2mm;font-size:8px}
+    .meta span{border-bottom:1px solid #555;min-height:11px;white-space:nowrap}
+    .obs-top{margin-top:1.5mm;border:1px solid #555;height:10mm;padding:1mm;font-size:7.2px}
+    .cols{display:grid;grid-template-columns:1fr 1fr;gap:2mm}
+    .col{min-width:0}
+    .sec{border:1px solid #111;margin:0 0 1.2mm;break-inside:avoid;page-break-inside:avoid}
+    .sec-title{background:#e9eef7;border-bottom:1px solid #111;font-weight:bold;font-size:7.6px;padding:1mm 1.1mm;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .row{display:grid;grid-template-columns:1fr 28mm;align-items:center;border-top:1px solid #ddd;min-height:4.3mm;padding:.55mm 1mm;gap:1mm}
+    .row:first-of-type{border-top:0}
+    .item{font-size:7.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .marks{font-size:6.7px;white-space:nowrap;text-align:right}
+    .marks b{display:inline-block;width:2.35mm;height:2.35mm;border:1px solid #111;margin:0 .45mm -0.3mm 0}
+    .legend{display:grid;grid-template-columns:repeat(6,1fr);gap:1mm;border:1px solid #111;padding:1mm;margin-bottom:2mm;font-size:7px;text-align:center}
+    .footer{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5mm;margin-top:2mm;font-size:7px}
+    .line{border-top:1px solid #111;text-align:center;padding-top:1mm;min-height:6mm}
+    .mini{font-size:6.7px;text-align:center;margin-top:1mm;color:#333}
+    .entrega-row{display:grid;grid-template-columns:1fr 42mm;gap:2mm;border:1px solid #111;margin-bottom:1mm;padding:1mm;font-size:7.5px;break-inside:avoid}
+    @media print{.no-print{display:none!important}.page{page-break-after:always}.page:last-child{page-break-after:auto}}
+  `;
+
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Checklist A4 compacto</title><style>${css}</style></head><body>`);
+
+  if(!entrega){
+    const secoes=(state.model.secoes||[]).map(sec=>({...sec,itens:[...(sec.itens||[])]}));
+    const cols=splitIntoColumns(secoes,4);
+    const pages=[cols.slice(0,2),cols.slice(2,4)];
+    pages.forEach((pageCols,idx)=>{
+      w.document.write(`<section class="page">`);
+      w.document.write(`<div class="head"><h1>CHECKLIST TÉCNICO MANUAL OFICIN-IA — PÁGINA ${idx+1}/2</h1><div class="meta"><span>Placa: <b>${esc(base.placa||'')}</b></span><span>O.S.: <b>${esc(base.osRef||'')}</b></span><span>KM: <b>${esc(base.km||'')}</b></span><span>Data: <b>${fmtDate(new Date())}</b></span><span>Cliente:</span><span>Veículo:</span><span>Mecânico:</span><span>Oficina: <b>${esc(base.oficinaNome||'')}</b></span></div>${idx===0?'<div class="obs-top">Relato do cliente / observações iniciais:</div>':''}</div>`);
+      if(idx===0) w.document.write(`<div class="legend"><div><b></b> OK</div><div><b></b> AT</div><div><b></b> TR</div><div><b></b> RET/REG</div><div><b></b> REV</div><div><b></b> N/A</div></div>`);
+      w.document.write(`<div class="cols">`);
+      pageCols.forEach(col=>{
+        w.document.write(`<div class="col">`);
+        col.secoes.forEach(sec=>{
+          w.document.write(`<div class="sec"><div class="sec-title">${esc(sec.emoji||'')} ${esc(sec.titulo||'Seção')}</div>`);
+          (sec.itens||[]).forEach(it=>{
+            w.document.write(`<div class="row"><div class="item">${esc(it.titulo||'Item')}</div><div class="marks"><b></b>OK <b></b>AT <b></b>TR <b></b>R/R <b></b>REV <b></b>N/A</div></div>`);
+          });
+          w.document.write(`</div>`);
+        });
+        w.document.write(`</div>`);
+      });
+      w.document.write(`</div>`);
+      if(idx===1){
+        w.document.write(`<div class="footer"><div class="line">Responsável técnico</div><div class="line">Gestor / Conferente</div><div class="line">Cliente / Autorização</div></div><div class="mini">${esc(APP.footer||'Powered by thIAguinho Soluções Digitais')} • Checklist manual compacto em até 2 folhas A4</div>`);
+      }
+      w.document.write(`</section>`);
+    });
+  }else{
+    const itens=getCriticalItems();
+    w.document.write(`<section class="page"><div class="head"><h1>CHECKLIST DE ENTREGA / CONFERÊNCIA — OFICIN-IA</h1><div class="meta"><span>Placa: <b>${esc(base.placa||'')}</b></span><span>O.S.: <b>${esc(base.osRef||'')}</b></span><span>KM: <b>${esc(base.km||'')}</b></span><span>Data: <b>${fmtDate(new Date())}</b></span><span>Conferente:</span><span>Cliente:</span><span>Veículo:</span><span>Oficina: <b>${esc(base.oficinaNome||'')}</b></span></div></div>`);
+    itens.forEach(i=>w.document.write(`<div class="entrega-row"><div><b>${esc(i.secao)}</b><br>${esc(i.item)} — ${esc(i.acaoLabel)}</div><div><b></b> Executado &nbsp; <b></b> Conferido &nbsp; <b></b> Pendente<br>Obs.:</div></div>`));
+    w.document.write(`<div class="footer"><div class="line">Responsável técnico</div><div class="line">Gestor / Conferente</div><div class="line">Cliente / Autorização</div></div><div class="mini">${esc(APP.footer||'Powered by thIAguinho Soluções Digitais')}</div></section>`);
+  }
+  w.document.write(`</body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(),300);
+}
+
 async function anexarOS(entrega=false){
   const osRef=($('osRef').value||'').trim(); if(!osRef) return toast('Informe O.S./referência para anexar.');
   const data=entrega?{entregaChecklist:state.delivery, entregaAtualizadaEm:nowISO()}:payloadBase();

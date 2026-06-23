@@ -20,6 +20,19 @@ Este pacote é para **GitHub Pages**.
 - Usa o mesmo Firebase do SaaS.
 
 
-## Correção V15.3 — GitHub Actions
+## Correção V15.4 — GitHub Actions
 
-O workflow usa `actions/setup-node@v4` com `node-version: 22`, porque o Capacitor CLI atual exige Node.js 22 ou superior. O erro `The Capacitor CLI requires NodeJS >=22.0.0` fica corrigido nesta versão.
+O workflow usa `actions/setup-node@v4` com `node-version: 22.x`, porque o Capacitor CLI atual exige Node.js 22 ou superior. O erro `The Capacitor CLI requires NodeJS >=22.0.0` fica corrigido nesta versão.
+
+
+## Correção V15.4
+
+Esta versão fixa o Capacitor em `6.2.1` e remove o uso de `latest`, para evitar erro do GitHub Actions quando o `npx cap add android` exigir Node mais novo do que o runner realmente carregou. O workflow também imprime `node -v` antes do build.
+
+## Se aparecer erro `Missing script: android:icons`
+
+Esse erro significa que o GitHub está usando arquivos misturados: workflow novo com `package.json` antigo. A V15.6 resolve isso no próprio workflow, mas você precisa substituir o arquivo:
+
+`.github/workflows/build-checklist-apk.yml`
+
+Depois rode a Action novamente em **Actions > Build Checklist APK > Run workflow**.
