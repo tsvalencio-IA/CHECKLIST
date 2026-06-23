@@ -616,8 +616,29 @@ function renderManagerItems(sec){
   $$('[data-del-item]',box).forEach(b=>b.onclick=()=>{ const it=sec.itens.find(x=>x.id===b.dataset.delItem); if(!confirm('Excluir item da seção?\n'+it.titulo)) return; sec.itens=sec.itens.filter(x=>x.id!==it.id); delete state.answers[it.id]; saveModelRemote({tipo:'excluir_item',secao:sec.id,item:it.id,por:state.session?.name||'',em:nowISO()}); renderManagerItems(sec); renderSections(); });
 }
 
-function abrirSaas(){ const base=(APP.saasBaseUrl||'').trim(); if(!base){ toast('URL do SaaS não configurada. O Checklist funciona separado no GitHub Pages e no APK.'); return; } window.open(base,'_blank','noopener'); }
-async function instalar(){ if(state.installPrompt){ state.installPrompt.prompt(); try{ await state.installPrompt.userChoice; }catch(e){} state.installPrompt=null; return; } toast('Para app real: gere o APK no GitHub Actions e instale o app Checklist. No navegador: menu ⋮ > Instalar app ou Adicionar à tela inicial.'); }
+function joinUrl(base, page=''){
+  const b=String(base||'').trim();
+  if(!b) return '';
+  return b.replace(/\/+$/,'/') + String(page||'').replace(/^\/+/, '');
+}
+function resolveSaasBaseUrl(){
+  const saved=(localStorage.getItem('OFICINIA_SAAS_BASE_URL')||'').trim();
+  if(saved) return saved;
+  const cfg=(APP.saasBaseUrl||'').trim();
+  if(cfg) return cfg;
+  const host=(location.hostname||'').toLowerCase();
+  if(host.endsWith('.github.io')) return `https://${host.split('.')[0]}.github.io/OFICIN-IA-COM_IA/`;
+  return 'https://tsvalencio-ia.github.io/OFICIN-IA-COM_IA/';
+}
+function saasEntryPage(){ return isGestor() ? 'jarvis.html' : 'equipe.html'; }
+function abrirSaas(){
+  const base=resolveSaasBaseUrl();
+  const url=joinUrl(base, saasEntryPage());
+  if(!url){ toast('URL do SaaS não encontrada.'); return; }
+  window.open(url,'_blank','noopener');
+  toast('Abrindo o SaaS integrado pelo mesmo Firebase.');
+}
+async function instalar(){ if(state.installPrompt){ state.installPrompt.prompt(); try{ await state.installPrompt.userChoice; }catch(e){} state.installPrompt=null; return; } toast('APK real: vá em Actions > GERAR APK CHECKLIST e baixe o artefato. No navegador: menu ⋮ > Instalar app.'); }
 function bind(){
   $('btnLogin')?.addEventListener('click',login); $('loginPwd')?.addEventListener('keydown',e=>{if(e.key==='Enter') login();});
   $('btnLogout')?.addEventListener('click',clearSession); $('btnTheme')?.addEventListener('click',()=>{state.theme=state.theme==='dark'?'light':'dark'; applyTheme();});

@@ -31,7 +31,7 @@ Esta versão fixa o Capacitor em `6.2.1` e remove o uso de `latest`, para evitar
 
 ## Se aparecer erro `Missing script: android:icons`
 
-Esse erro significa que o GitHub está usando arquivos misturados: workflow novo com `package.json` antigo. A V15.6 resolve isso no próprio workflow, mas você precisa substituir o arquivo:
+Esse erro significa que o GitHub está usando arquivos misturados: workflow novo com `package.json` antigo. A V15.7 resolve isso no próprio workflow, mas você precisa substituir o arquivo:
 
 `.github/workflows/build-checklist-apk.yml`
 

@@ -67,7 +67,7 @@ O workflow usa `actions/setup-node@v4` com `node-version: 22.x`, porque o Capaci
 
 Esta versão fixa o Capacitor em `6.2.1` e remove o uso de `latest`, para evitar erro do GitHub Actions quando o `npx cap add android` exigir Node mais novo do que o runner realmente carregou. O workflow também imprime `node -v` antes do build.
 
-## Correção V15.5/V15.6 — GitHub Actions sem erro de script antigo
+## Correção V15.5/V15.7 — GitHub Actions sem erro de script antigo
 
 Esta versão troca o workflow do APK por um fluxo mais robusto. O arquivo `.github/workflows/build-checklist-apk.yml` não depende mais do script antigo do repositório para aplicar ícone. Ele força o `package.json` correto durante a Action e aplica os ícones Android por Node inline.
 
@@ -82,7 +82,7 @@ Ao subir no GitHub, substitua todos os arquivos antigos, principalmente:
 Se o repositório já tinha arquivos anteriores, apague/substitua antes de rodar a Action novamente.
 
 
-## Correção V15.6 — impressão manual em até 2 folhas A4
+## Correção V15.7 — impressão manual em até 2 folhas A4
 
 A impressão manual do mecânico foi compactada para o padrão oficina em até 2 páginas:
 

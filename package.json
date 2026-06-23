@@ -1,6 +1,6 @@
 {
-  "name": "oficin-ia-checklist-v15-6-github-pages-apk-print-a4-2folhas",
-  "version": "15.6.0",
+  "name": "oficin-ia-checklist-v15-7-github-pages-apk-saas-fix",
+  "version": "15.7.0",
   "private": true,
   "description": "OFICIN-IA Checklist separado para GitHub Pages com APK próprio. Workflow robusto sem depender de scripts npm antigos.",
   "scripts": {
