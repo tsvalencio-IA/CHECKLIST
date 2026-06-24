@@ -67,7 +67,7 @@ O workflow usa `actions/setup-node@v4` com `node-version: 22.x`, porque o Capaci
 
 Esta versão fixa o Capacitor em `6.2.1` e remove o uso de `latest`, para evitar erro do GitHub Actions quando o `npx cap add android` exigir Node mais novo do que o runner realmente carregou. O workflow também imprime `node -v` antes do build.
 
-## Correção V15.5/V15.7 — GitHub Actions sem erro de script antigo
+## Correção V15.5/V15.9 — GitHub Actions sem erro de script antigo
 
 Esta versão troca o workflow do APK por um fluxo mais robusto. O arquivo `.github/workflows/build-checklist-apk.yml` não depende mais do script antigo do repositório para aplicar ícone. Ele força o `package.json` correto durante a Action e aplica os ícones Android por Node inline.
 
@@ -82,7 +82,7 @@ Ao subir no GitHub, substitua todos os arquivos antigos, principalmente:
 Se o repositório já tinha arquivos anteriores, apague/substitua antes de rodar a Action novamente.
 
 
-## Correção V15.7 — impressão manual em até 2 folhas A4
+## Correção V15.9 — impressão manual em até 2 folhas A4
 
 A impressão manual do mecânico foi compactada para o padrão oficina em até 2 páginas:
 
@@ -91,3 +91,19 @@ A impressão manual do mecânico foi compactada para o padrão oficina em até 2
 - marcações compactas: OK, AT, TR, R/R, REV e N/A;
 - assinatura do técnico, gestor/conferente e cliente na segunda página;
 - sem cartões grandes e sem espaçamento de tela mobile na impressão.
+
+
+## V15.9 — Correção de fluxo do mecânico
+
+- O app não muda mais de seção sozinho.
+- A seção só avança quando todos os itens dela tiverem uma ação marcada, inclusive N/A.
+- O botão inferior não deixa ir para relato/fotos enquanto houver item pendente no checklist técnico.
+
+
+## V15.12
+
+- Botão **Ir para início** no topo e na barra inferior.
+- Fluxo explícito para **Salvar / Editar / Excluir checklist salvo**.
+- Consulta de checklists com botão **Editar**, **PDF** e **Excluir** para gestor.
+- PDF premium redesenhado com cabeçalho profissional, resumo visual, seções separadas, badges de status e assinaturas.
+- Cache atualizado para evitar arquivo antigo no APK/PWA.

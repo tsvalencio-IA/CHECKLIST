@@ -109,6 +109,7 @@ function applySessionUi(){
   $('responsavel').value = s ? s.name : '';
   $('conferente').value = s ? s.name : '';
   $('btnLogout')?.classList.toggle('hidden', !s);
+  $('btnHomeTop')?.classList.toggle('hidden', !s);
   applyBrand(s?.brand || DEFAULT_BRAND);
 }
 
@@ -204,6 +205,7 @@ async function login(){
     saveSession(sess,remember);
     await loadModel(true);
     restoreDraft();
+    applyQueryPrefill();
     renderAll();
     go('screenInicio');
     toast('Login autorizado.');
@@ -234,18 +236,37 @@ async function saveModelRemote(auditoria={}){
 
 function itemMap(){ const m={}; (state.model?.secoes||[]).forEach(sec => (sec.itens||[]).forEach(it => { m[it.id]={...it, secaoId:sec.id, secaoTitulo:sec.titulo, secaoEmoji:sec.emoji}; })); return m; }
 function actionInfo(id){ return (state.model?.acoesPadrao||[]).find(a=>a.id===id) || {id,label:id,emoji:'•',classe:'info'}; }
-function countRequired(){ let total=0; (state.model?.secoes||[]).forEach(sec => (sec.itens||[]).forEach(it=>{ if(it.obrigatorio!==false) total++; })); return total; }
+function allChecklistItems(){
+  const out=[];
+  (state.model?.secoes||[]).forEach(sec => (sec.itens||[]).forEach(it => out.push({...it, secaoId:sec.id, secaoTitulo:sec.titulo})));
+  return out;
+}
+function sectionStats(sec){
+  const items=sec?.itens||[];
+  const done=items.filter(it=>!!state.answers[it.id]?.acao).length;
+  const pending=Math.max(items.length-done,0);
+  const firstPending=items.find(it=>!state.answers[it.id]?.acao);
+  return {total:items.length, done, pending, complete:items.length>0 && pending===0, firstPending};
+}
+function firstPendingItem(){
+  for(const sec of (state.model?.secoes||[])){
+    const st=sectionStats(sec);
+    if(st.pending>0) return {sec, item:st.firstPending, pending:st.pending};
+  }
+  return null;
+}
 function stats(){
-  const allItems=itemMap(); const answers=Object.values(state.answers||{}); const req=countRequired();
-  const answeredRequired=Object.values(allItems).filter(it => it.obrigatorio!==false && state.answers[it.id]?.acao).length;
-  const pending=Math.max(req-answeredRequired,0);
+  const allItems=allChecklistItems(); const answers=Object.values(state.answers||{});
+  const total=allItems.length;
+  const answered=allItems.filter(it => state.answers[it.id]?.acao).length;
+  const pending=Math.max(total-answered,0);
   return {
     ok:answers.filter(a=>a.acao==='ok').length,
     atencao:answers.filter(a=>a.acao==='atencao').length,
     trocar:answers.filter(a=>a.acao==='trocar').length,
     tecnicas:answers.filter(a=>ACTIONS_FINAL.has(a.acao) && a.acao!=='atencao' && a.acao!=='trocar').length,
     pending,
-    percent:req?Math.round((answeredRequired/req)*100):0
+    percent:total?Math.round((answered/total)*100):0
   };
 }
 function saveDraft(){
@@ -271,8 +292,46 @@ function go(screen){
   $('btnNext').textContent = screen==='screenResumo' ? 'Entrega ➜' : screen==='screenEntrega' ? 'Finalizar ✅' : 'Avançar ➜';
   renderAll(); window.scrollTo({top:0,behavior:'smooth'});
 }
-function next(){ if(state.screen==='screenInicio') go('screenChecklist'); else if(state.screen==='screenChecklist') go('screenMidia'); else if(state.screen==='screenMidia') { renderResumo(); go('screenResumo'); } else if(state.screen==='screenResumo') abrirEntrega(); else if(state.screen==='screenEntrega') { toast('Checklist concluído. Salve/exports ou inicie novo.'); } else go('screenInicio'); }
+
+function applyQueryPrefill(){
+  try{
+    const q=new URLSearchParams(location.search||'');
+    const placa=q.get('placa')||q.get('plate')||'';
+    const os=q.get('os')||q.get('osRef')||q.get('ordem')||'';
+    const km=q.get('km')||'';
+    const relato=q.get('relato')||'';
+    if(placa && $('placa') && !$('placa').value) $('placa').value=placaNorm(placa);
+    if(os && $('osRef') && !$('osRef').value) $('osRef').value=String(os).trim();
+    if(km && $('km') && !$('km').value) $('km').value=String(km).trim();
+    if(relato && $('relato') && !$('relato').value) $('relato').value=String(relato).trim();
+    if(placa||os||km||relato) saveDraft();
+  }catch(e){ console.warn('query prefill',e); }
+}
+function next(){
+  if(state.screen==='screenInicio') go('screenChecklist');
+  else if(state.screen==='screenChecklist') {
+    const pend=firstPendingItem();
+    if(pend){
+      state.activeSection=pend.sec.id;
+      renderSections(); renderProgress(); saveDraft();
+      setTimeout(()=>document.querySelector(`[data-section="${pend.sec.id}"]`)?.scrollIntoView({behavior:'smooth',block:'start'}),80);
+      toast(`Ainda falta marcar ${pend.pending} item(ns) em ${pend.sec.titulo}. Marque OK, Atenção, Trocar, Revisar ou N/A.`);
+      return;
+    }
+    go('screenMidia');
+  }
+  else if(state.screen==='screenMidia') { renderResumo(); go('screenResumo'); }
+  else if(state.screen==='screenResumo') abrirEntrega();
+  else if(state.screen==='screenEntrega') { toast('Checklist concluído. Salve/exports ou inicie novo.'); }
+  else go('screenInicio');
+}
 function back(){ if(state.screen==='screenEntrega') go('screenResumo'); else if(state.screen==='screenResumo') go('screenMidia'); else if(state.screen==='screenMidia') go('screenChecklist'); else if(state.screen==='screenChecklist') go('screenInicio'); else go('screenInicio'); }
+function irParaInicio(){
+  if(!sessionOk(state.session||loadSession(false))) return go('screenLogin');
+  saveDraft();
+  go('screenInicio');
+  toast('Início do Checklist. Seu rascunho foi mantido.');
+}
 
 function renderAll(){ renderSymptoms(); renderSections(); renderProgress(); renderPhotos(); renderDelivery(); }
 function renderProgress(){
@@ -280,6 +339,7 @@ function renderProgress(){
   if($('progressBar')) $('progressBar').style.width=s.percent+'%';
   if($('percentPill')) $('percentPill').textContent=s.percent+'% concluído';
   if($('kOk')) $('kOk').textContent=s.ok; if($('kAt')) $('kAt').textContent=s.atencao; if($('kTrocar')) $('kTrocar').textContent=s.trocar; if($('kAcoes')) $('kAcoes').textContent=s.tecnicas; if($('kPend')) $('kPend').textContent=s.pending;
+  if($('btnNext') && state.screen==='screenChecklist') $('btnNext').textContent = s.pending ? `Pendentes (${s.pending})` : 'Avançar ➜';
 }
 function renderSymptoms(){
   const box=$('symptoms'); if(!box || !state.model) return;
@@ -293,16 +353,19 @@ function renderSections(){
     const items=(sec.itens||[]).filter(it=>!q || norm(it.titulo+' '+it.hint+' '+sec.titulo).includes(q));
     if(q && !items.length) return '';
     const done=items.filter(it=>state.answers[it.id]?.acao).length;
+    const fullStats=sectionStats(sec);
     const open = q || state.activeSection===sec.id;
+    const footer = q ? '' : `<div class="section-footer ${fullStats.complete?'done':''}"><div><b>${fullStats.complete?'✅ Seção completa':'⚠️ Falta marcar '+fullStats.pending+' item(ns)'}</b><small>${fullStats.complete?'Você pode avançar quando quiser.':'Marque cada item desta seção como OK, Atenção, Trocar, Revisar ou N/A. O app não muda de seção sozinho.'}</small></div><button class="btn ${fullStats.complete?'ok':'secondary'} small" data-next-section="${esc(sec.id)}" ${fullStats.complete?'':'disabled'} type="button">${fullStats.complete?'Próxima seção ➜':'Complete a seção'}</button></div>`;
     return `<div class="section ${open?'open':''}" data-section="${esc(sec.id)}">
       <div class="section-head" data-open-section="${esc(sec.id)}"><h3>${esc(sec.emoji||'🔧')} ${esc(sec.titulo)}</h3><div style="display:flex;gap:7px;align-items:center"><span class="pill">${done}/${items.length}</span>${isGestor()?`<button class="btn secondary small" data-manage="${esc(sec.id)}" type="button">✏️ Editar</button>`:''}</div></div>
-      <div class="section-body"><div class="notice">${esc(sec.hint||'')}</div>${items.map(it=>renderItem(sec,it)).join('')}</div>
+      <div class="section-body"><div class="notice">${esc(sec.hint||'')}</div>${items.map(it=>renderItem(sec,it)).join('')}${footer}</div>
     </div>`;
   }).join('');
   box.innerHTML=html || '<div class="notice warn">Nenhum item encontrado na pesquisa.</div>';
   $$('[data-open-section]').forEach(h=>h.addEventListener('click',e=>{ if(e.target.closest('[data-manage]')) return; state.activeSection=h.dataset.openSection; renderSections(); saveDraft(); }));
   $$('[data-manage]').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); openManager(b.dataset.manage); }));
   $$('[data-action]').forEach(b=>b.addEventListener('click',()=>setAction(b.dataset.item,b.dataset.action)));
+  $$('[data-next-section]').forEach(b=>b.addEventListener('click',()=>goNextSection(b.dataset.nextSection)));
   $$('[data-obs]').forEach(t=>t.addEventListener('input',()=>{ ensureAnswer(t.dataset.obs).obs=t.value; saveDraft(); renderProgress(); }));
   $$('[data-dictate]').forEach(b=>b.addEventListener('click',()=>dictateToItem(b.dataset.dictate)));
   $$('[data-photo-item]').forEach(inp=>inp.addEventListener('change',e=>addItemPhotos(inp.dataset.photoItem,e.target.files)));
@@ -325,33 +388,53 @@ function ensureAnswer(itemId){
 function setAction(itemId,action){
   const im=itemMap()[itemId]||{}; const ans=ensureAnswer(itemId);
   ans.item=im.titulo||itemId; ans.secao=im.secaoTitulo||''; ans.secaoId=im.secaoId||''; ans.acao=action; ans.acaoLabel=actionInfo(action).label; ans.updatedAt=nowISO(); ans.updatedBy=state.session?.name||'';
-  saveDraft(); renderSections(); renderProgress(); autoAdvanceSection(im.secaoId);
+  saveDraft();
+  const sec=(state.model.secoes||[]).find(s=>s.id===im.secaoId);
+  const completedAfter = sec ? sectionStats(sec).complete : false;
+  renderSections(); renderProgress();
+  if(completedAfter) toast('Seção completa. Ela não vai mudar sozinha; toque em “Próxima seção” para avançar.');
 }
-function autoAdvanceSection(secId){
-  const sec=(state.model.secoes||[]).find(s=>s.id===secId); if(!sec) return;
-  const obrig=(sec.itens||[]).filter(i=>i.obrigatorio!==false);
-  const all=obrig.length && obrig.every(i=>state.answers[i.id]?.acao);
-  if(!all) return;
-  const idx=(state.model.secoes||[]).findIndex(s=>s.id===secId);
-  const nextSec=state.model.secoes[idx+1];
-  if(nextSec){ state.activeSection=nextSec.id; setTimeout(()=>{ renderSections(); document.querySelector(`[data-section="${nextSec.id}"]`)?.scrollIntoView({behavior:'smooth',block:'start'}); },250); }
+function goNextSection(secId){
+  const secs=state.model?.secoes||[];
+  const sec=secs.find(s=>s.id===secId);
+  if(!sec) return;
+  const st=sectionStats(sec);
+  if(!st.complete){
+    state.activeSection=sec.id; renderSections(); renderProgress();
+    toast(`Falta marcar ${st.pending} item(ns) nesta seção. Use OK, Atenção, Trocar, Revisar ou N/A.`);
+    return;
+  }
+  const idx=secs.findIndex(s=>s.id===secId);
+  const nextSec=secs[idx+1];
+  if(nextSec){
+    state.activeSection=nextSec.id; saveDraft(); renderSections(); renderProgress();
+    setTimeout(()=>document.querySelector(`[data-section="${nextSec.id}"]`)?.scrollIntoView({behavior:'smooth',block:'start'}),80);
+  } else {
+    toast('Todas as seções foram preenchidas. Você já pode avançar para relato, fotos e relatório.');
+  }
 }
 
 function payloadBase(){
   const placa=placaNorm($('placa')?.value||'');
   const allItems=itemMap();
   const itens=Object.values(state.answers).map(a=>({...a, fotos:(state.itemPhotos[a.id]||[]).length, criticidade:allItems[a.id]?.criticidade||'normal', obrigatorio:allItems[a.id]?.obrigatorio!==false}));
-  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15', versao:state.model?.versao||'v15', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef:($('osRef')?.value||'').trim(), km:($('km')?.value||'').trim(), responsavel:state.session?.name||'', responsavelPerfil:state.session?.role||'', relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:state.generalPhotos.length, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
+  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15-12', versao:state.model?.versao||'v15.12', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef:($('osRef')?.value||'').trim(), km:($('km')?.value||'').trim(), responsavel:state.session?.name||'', responsavelPerfil:state.session?.role||'', relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:state.generalPhotos.length, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
 }
 async function saveChecklist(){
   if(!placaNorm($('placa')?.value||'')) { toast('Informe a placa antes de salvar.'); go('screenInicio'); return null; }
   const payload=payloadBase(); setBusy('btnSalvar',true,'Salvando...');
   try{
     const db=activeDb();
-    if(state.lastSavedId){ await db.collection('checklists').doc(state.lastSavedId).set(payload,{merge:true}); }
+    if(state.lastSavedId){ await db.collection('checklists').doc(state.lastSavedId).set(payload,{merge:true}); payload.id=state.lastSavedId; }
     else { const ref=await db.collection('checklists').add(payload); state.lastSavedId=ref.id; payload.id=ref.id; await ref.set({id:ref.id},{merge:true}); }
     localStorage.setItem('OFICINIA_CHECKLIST_LAST_'+payload.placa, JSON.stringify(payload));
-    toast('Checklist salvo no Firebase.');
+    let msg='Checklist salvo no Firebase.';
+    if(payload.osRef){
+      const linked=await anexarPayloadNaOS(payload,false,true);
+      msg = linked ? 'Checklist salvo e anexado na O.S. do Jarvis.' : 'Checklist salvo. Não encontrei a O.S. informada para anexar.';
+    }
+    toast(msg);
+    renderResumo();
     return payload;
   }catch(e){ console.warn(e); localStorage.setItem('OFICINIA_CHECKLIST_LOCAL_'+payload.id, JSON.stringify(payload)); toast('Firebase bloqueou/offline. Checklist salvo localmente.'); return payload; }
   finally{ setBusy('btnSalvar',false); }
@@ -360,8 +443,10 @@ function renderResumo(){
   const box=$('resumoLista'); if(!box) return;
   const itens=payloadBase().itens;
   const crit=itens.filter(i=>ACTIONS_FINAL.has(i.acao));
-  $('resumoPill').textContent = `${crit.length} itens para relatório`;
-  box.innerHTML = crit.length ? crit.map(i=>`<div class="res-line"><b>${esc(i.secao)} • ${esc(i.item)}</b><span class="pill ${esc(actionInfo(i.acao).classe)}">${esc(actionInfo(i.acao).emoji)} ${esc(i.acaoLabel)}</span>${i.obs?`<small>${esc(i.obs)}</small>`:''}</div>`).join('') : '<div class="notice">Nenhum item crítico. Se necessário, gere PDF mesmo assim para registrar a avaliação.</div>';
+  $('resumoPill').textContent = state.lastSavedId ? `Editando ${state.lastSavedId}` : `${crit.length} itens para relatório`;
+  if($('btnSalvar')) $('btnSalvar').textContent = state.lastSavedId ? '💾 Salvar alterações' : '✅ Salvar checklist';
+  if($('btnExcluirAtual')) $('btnExcluirAtual').disabled = !state.lastSavedId || !isGestor();
+  box.innerHTML = `${state.lastSavedId?`<div class="notice warn"><b>Modo edição:</b> este checklist já foi salvo. Se alterar e tocar em “Salvar alterações”, o registro ${esc(state.lastSavedId)} será atualizado.</div>`:''}` + (crit.length ? crit.map(i=>`<div class="res-line"><b>${esc(i.secao)} • ${esc(i.item)}</b><span class="pill ${esc(actionInfo(i.acao).classe)}">${esc(actionInfo(i.acao).emoji)} ${esc(i.acaoLabel)}</span>${i.obs?`<small>${esc(i.obs)}</small>`:''}</div>`).join('') : '<div class="notice">Nenhum item crítico. Se necessário, gere PDF mesmo assim para registrar a avaliação.</div>');
 }
 
 async function buscarHistorico(){
@@ -388,14 +473,28 @@ function renderHistorico(){
   const html=[];
   html.push(`<div class="notice"><b>Histórico da placa ${esc(placaNorm($('placa').value))}</b><br>O.S.: ${os.length} • Checklists: ${checklists.length} • Entregas: ${entregas.length}</div>`);
   os.slice(0,8).forEach(o=>html.push(`<div class="hist"><b>O.S. ${esc(o.numero||o.codigo||o.osRef||o.id)}</b><small>${esc(o.clienteNome||o.cliente?.nome||o.nomeCliente||'Cliente não informado')} • ${esc(o.status||o.etapa||'status não informado')} • ${fmtDateTime(o.criadoEm||o.createdAt||o.data)}</small></div>`));
-  checklists.slice(0,8).forEach(c=>html.push(`<div class="hist"><b>Checklist ${esc(c.id)}</b><small>${fmtDateTime(c.criadoEm||c.createdAt)} • ${esc(c.responsavel||c.mecanico||'')} • Trocar: ${onlyFinite(c.stats?.trocar)}</small>${isGestor()?`<button class="btn bad small" data-del-check="${esc(c.id)}" data-col="${esc(c._col||'checklists')}" type="button">Excluir</button>`:''}</div>`));
+  checklists.slice(0,8).forEach(c=>html.push(`<div class="hist"><b>Checklist ${esc(c.id)}</b><small>${fmtDateTime(c.criadoEm||c.createdAt)} • ${esc(c.responsavel||c.mecanico||'')} • Trocar: ${onlyFinite(c.stats?.trocar)}</small><div class="actions"><button class="btn secondary small" data-load-hist="${esc(c.id)}" type="button">✏️ Editar</button><button class="btn secondary small" data-pdf-hist="${esc(c.id)}" type="button">📄 PDF</button>${isGestor()?`<button class="btn bad small" data-del-check="${esc(c.id)}" data-col="${esc(c._col||'checklists')}" type="button">🗑️ Excluir</button>`:''}</div></div>`));
   box.innerHTML=html.join('');
   $$('[data-del-check]',box).forEach(b=>b.addEventListener('click',()=>deleteChecklist(b.dataset.col,b.dataset.delCheck)));
+  $$('[data-load-hist]',box).forEach(b=>b.addEventListener('click',()=>loadChecklistFromList(state.history.checklists,b.dataset.loadHist)));
+  $$('[data-pdf-hist]',box).forEach(b=>b.addEventListener('click',()=>{ const c=(state.history.checklists||[]).find(x=>x.id===b.dataset.pdfHist); if(c) gerarPDF(c); }));
 }
 async function deleteChecklist(col,id){
   if(!isGestor()) return toast('Somente gestor/gerente/admin pode excluir.');
+  if(!id) return toast('Nenhum checklist salvo selecionado.');
   if(!confirm('Excluir checklist salvo? A O.S. não será apagada.')) return;
-  try{ await activeDb().collection(col||'checklists').doc(id).delete(); toast('Checklist excluído.'); await buscarHistorico(); }catch(e){ console.warn(e); toast('Firebase não permitiu excluir. Confira regras de gestor.'); }
+  try{
+    await activeDb().collection(col||'checklists').doc(id).delete();
+    if(state.lastSavedId===id) state.lastSavedId='';
+    state.consulta=state.consulta.filter(x=>x.id!==id);
+    if(placaNorm($('placa')?.value||'')) await buscarHistorico();
+    renderConsulta(); renderResumo();
+    toast('Checklist excluído.');
+  }catch(e){ console.warn(e); toast('Firebase não permitiu excluir. Confira regras de gestor.'); }
+}
+async function deleteCurrentChecklist(){
+  if(!state.lastSavedId) return toast('Este checklist ainda não foi salvo no Firebase.');
+  await deleteChecklist('checklists', state.lastSavedId);
 }
 async function consultar(){
   go('screenConsulta'); setBusy('btnRodarConsulta',true,'Pesquisando...');
@@ -411,15 +510,33 @@ async function consultar(){
 function renderConsulta(){
   const box=$('consultaLista'); if(!box) return;
   if(!state.consulta.length){ box.innerHTML='<div class="notice warn">Nenhum checklist encontrado.</div>'; return; }
-  box.innerHTML=state.consulta.map(c=>`<div class="hist"><b>${esc(c.placa||'-')} • ${esc(c.osRef||'sem O.S.')}</b><small>${fmtDateTime(c.criadoEm||c.createdAt)} • ${esc(c.responsavel||'')} • ${esc(c.oficinaNome||'')}</small><div class="badges"><span class="pill ok">OK ${onlyFinite(c.stats?.ok)}</span><span class="pill warn">Atenção ${onlyFinite(c.stats?.atencao)}</span><span class="pill bad">Trocar ${onlyFinite(c.stats?.trocar)}</span></div><div class="actions">${isGestor()?`<button class="btn bad small" data-del-check="${esc(c.id)}" data-col="checklists" type="button">Excluir</button>`:''}<button class="btn secondary small" data-load-check="${esc(c.id)}" type="button">Carregar</button><button class="btn secondary small" data-pdf-check="${esc(c.id)}" type="button">PDF</button></div></div>`).join('');
+  box.innerHTML=state.consulta.map(c=>`<div class="hist"><b>${esc(c.placa||'-')} • ${esc(c.osRef||'sem O.S.')}</b><small>${fmtDateTime(c.criadoEm||c.createdAt)} • ${esc(c.responsavel||'')} • ${esc(c.oficinaNome||'')}</small><div class="badges"><span class="pill ok">OK ${onlyFinite(c.stats?.ok)}</span><span class="pill warn">Atenção ${onlyFinite(c.stats?.atencao)}</span><span class="pill bad">Trocar ${onlyFinite(c.stats?.trocar)}</span></div><div class="actions"><button class="btn secondary small" data-load-check="${esc(c.id)}" type="button">✏️ Editar</button><button class="btn secondary small" data-pdf-check="${esc(c.id)}" type="button">📄 PDF</button>${isGestor()?`<button class="btn bad small" data-del-check="${esc(c.id)}" data-col="checklists" type="button">🗑️ Excluir</button>`:''}</div></div>`).join('');
   $$('[data-del-check]',box).forEach(b=>b.addEventListener('click',()=>deleteChecklist(b.dataset.col,b.dataset.delCheck)));
   $$('[data-load-check]',box).forEach(b=>b.addEventListener('click',()=>loadChecklistFromConsulta(b.dataset.loadCheck)));
   $$('[data-pdf-check]',box).forEach(b=>b.addEventListener('click',()=>{ const c=state.consulta.find(x=>x.id===b.dataset.pdfCheck); if(c) gerarPDF(c); }));
 }
-function loadChecklistFromConsulta(id){
-  const c=state.consulta.find(x=>x.id===id); if(!c) return;
-  state.lastSavedId=c.id; state.answers={}; (c.itens||[]).forEach(i=>{ if(i.id) state.answers[i.id]=i; });
-  $('placa').value=c.placa||''; $('osRef').value=c.osRef||''; $('km').value=c.km||''; $('relato').value=c.relato||''; $('diagnostico').value=c.diagnostico||''; saveDraft(); renderAll(); go('screenResumo'); toast('Checklist carregado.');
+function hydrateChecklistForEdit(c){
+  if(!c) return;
+  state.lastSavedId=c.id||'';
+  state.answers={};
+  (c.itens||[]).forEach(i=>{
+    const id=i.id || i.checklistItemId || i.itemId;
+    if(id) state.answers[id]={...i,id};
+  });
+  state.itemPhotos={}; state.generalPhotos=[];
+  $('placa').value=c.placa||'';
+  $('osRef').value=c.osRef||'';
+  $('km').value=c.km||'';
+  $('relato').value=c.relato||'';
+  $('diagnostico').value=c.diagnostico||'';
+  saveDraft(); renderAll(); renderResumo(); go('screenResumo');
+  toast('Checklist carregado para edição. Ao salvar, ele será atualizado.');
+}
+function loadChecklistFromConsulta(id){ loadChecklistFromList(state.consulta,id); }
+function loadChecklistFromList(list,id){
+  const c=(list||[]).find(x=>x.id===id);
+  if(!c) return toast('Checklist não encontrado nesta lista.');
+  hydrateChecklistForEdit(c);
 }
 
 function getCriticalItems(){ return payloadBase().itens.filter(i=>ACTIONS_FINAL.has(i.acao)); }
@@ -445,22 +562,99 @@ async function saveEntrega(){
 }
 
 function pdfLine(doc,text,x,y,max=180){ const lines=doc.splitTextToSize(String(text||''),max); doc.text(lines,x,y); return y + lines.length*5; }
+function pdfColorForAction(acao){
+  if(acao==='ok') return [22,163,74];
+  if(acao==='atencao') return [217,119,6];
+  if(acao==='trocar') return [220,38,38];
+  if(acao==='na') return [100,116,139];
+  return [14,165,233];
+}
+function pdfShortForAction(acao){
+  if(acao==='ok') return 'OK';
+  if(acao==='atencao') return 'AT';
+  if(acao==='trocar') return 'TR';
+  if(acao==='retificar') return 'RET';
+  if(acao==='regular') return 'REG';
+  if(acao==='ajustar') return 'AJ';
+  if(acao==='lubrificar') return 'LUB';
+  if(acao==='limpar') return 'LIM';
+  if(acao==='revisar') return 'REV';
+  if(acao==='na') return 'N/A';
+  return String(acao||'-').slice(0,3).toUpperCase();
+}
+function pdfEnsurePage(doc,y,footer=true){
+  if(y<=270) return y;
+  if(footer) pdfFooter(doc);
+  doc.addPage();
+  return 14;
+}
+function pdfFooter(doc){
+  const pages=doc.internal.getNumberOfPages();
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(100,116,139);
+  doc.text(`${APP.footer||'Powered by thIAguinho Soluções Digitais'} • Página ${pages}`,12,291);
+}
+function pdfSectionHeader(doc,sec,y){
+  y=pdfEnsurePage(doc,y+3,false);
+  doc.setFillColor(232,240,254); doc.roundedRect(10,y,190,9,2,2,'F');
+  doc.setDrawColor(191,219,254); doc.roundedRect(10,y,190,9,2,2,'S');
+  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(15,23,42);
+  doc.text(String(sec||'Geral'),14,y+6);
+  return y+12;
+}
+function pdfStatusBadge(doc,acao,x,y){
+  const c=pdfColorForAction(acao); const label=pdfShortForAction(acao);
+  doc.setFillColor(c[0],c[1],c[2]); doc.roundedRect(x,y-4.4,16,6.4,2,2,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(6.5); doc.setTextColor(255,255,255); doc.text(label,x+8,y-.1,{align:'center'});
+}
 function gerarPDF(source){
   const data=source||payloadBase(); const jsPDF=window.jspdf?.jsPDF; if(!jsPDF){ toast('Biblioteca PDF não carregou.'); return; }
-  const doc=new jsPDF({unit:'mm',format:'a4'}); let y=12;
-  doc.setFillColor(15,23,42); doc.rect(0,0,210,24,'F'); doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.text('OFICIN-IA CHECKLIST TÉCNICO',12,15); doc.setFontSize(9); doc.text(APP.footer||'',140,15);
-  doc.setTextColor(15,23,42); y=34; doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.text(`Placa: ${data.placa||'-'}   O.S.: ${data.osRef||'-'}   KM: ${data.km||'-'}`,12,y); y+=7; doc.setFont('helvetica','normal'); doc.text(`Oficina: ${data.oficinaNome||state.session?.oficinaNome||'-'}   Responsável: ${data.responsavel||state.session?.name||'-'}`,12,y); y+=7; doc.text(`Data: ${fmtDateTime(data.criadoEm||nowISO())}`,12,y); y+=8;
-  doc.setFont('helvetica','bold'); doc.text('Resumo',12,y); y+=6; doc.setFont('helvetica','normal'); doc.text(`OK: ${data.stats?.ok||0} | Atenção: ${data.stats?.atencao||0} | Trocar: ${data.stats?.trocar||0} | Pendentes: ${data.stats?.pending||0}`,12,y); y+=8;
-  if(data.relato){ doc.setFont('helvetica','bold'); doc.text('Relato do cliente',12,y); y+=5; doc.setFont('helvetica','normal'); y=pdfLine(doc,data.relato,12,y,186)+2; }
-  if(data.diagnostico){ doc.setFont('helvetica','bold'); doc.text('Diagnóstico técnico',12,y); y+=5; doc.setFont('helvetica','normal'); y=pdfLine(doc,data.diagnostico,12,y,186)+2; }
+  const doc=new jsPDF({unit:'mm',format:'a4'}); let y=0;
+  // Capa/cabeçalho premium
+  doc.setFillColor(15,23,42); doc.rect(0,0,210,30,'F');
+  doc.setFillColor(37,99,235); doc.circle(17,15,7,'F');
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.text('CHECKLIST TÉCNICO INTELIGENTE',28,14);
+  doc.setFontSize(8.5); doc.setFont('helvetica','normal'); doc.text('Avaliação técnica • histórico por placa • relatório integrado à O.S.',28,21);
+  doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.text('OFICIN-IA',17,16,{align:'center'});
+
+  y=38;
+  doc.setFillColor(248,250,252); doc.roundedRect(10,y,190,24,3,3,'F'); doc.setDrawColor(226,232,240); doc.roundedRect(10,y,190,24,3,3,'S');
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(71,85,105);
+  doc.text('PLACA',16,y+7); doc.text('O.S.',56,y+7); doc.text('KM',96,y+7); doc.text('RESPONSÁVEL',128,y+7);
+  doc.setTextColor(15,23,42); doc.setFontSize(12);
+  doc.text(String(data.placa||'-'),16,y+16); doc.text(String(data.osRef||'-'),56,y+16); doc.text(String(data.km||'-'),96,y+16); doc.text(String(data.responsavel||state.session?.name||'-').slice(0,28),128,y+16);
+  y+=31;
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(71,85,105);
+  doc.text(`Oficina: ${data.oficinaNome||state.session?.oficinaNome||'-'}`,12,y); doc.text(`Gerado em: ${fmtDateTime(data.criadoEm||nowISO())}`,126,y); y+=8;
+
+  const st=data.stats||{}; const boxes=[['OK',st.ok||0,[22,163,74]],['ATENÇÃO',st.atencao||0,[217,119,6]],['TROCAR',st.trocar||0,[220,38,38]],['AÇÕES TÉCNICAS',st.tecnicas||0,[14,165,233]],['PENDENTES',st.pending||0,[100,116,139]]];
+  boxes.forEach((b,i)=>{ const x=10+i*38; doc.setFillColor(255,255,255); doc.setDrawColor(226,232,240); doc.roundedRect(x,y,36,18,3,3,'FD'); doc.setFillColor(...b[2]); doc.circle(x+7,y+9,3.2,'F'); doc.setTextColor(15,23,42); doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.text(String(b[1]),x+15,y+8); doc.setFontSize(6.8); doc.setTextColor(100,116,139); doc.text(b[0],x+15,y+14); });
+  y+=25;
+
+  if(data.relato){ y=pdfEnsurePage(doc,y); doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(15,23,42); doc.text('Relato do cliente',12,y); y+=5; doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(51,65,85); y=pdfLine(doc,data.relato,12,y,186)+3; }
+  if(data.diagnostico){ y=pdfEnsurePage(doc,y); doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(15,23,42); doc.text('Diagnóstico técnico',12,y); y+=5; doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(51,65,85); y=pdfLine(doc,data.diagnostico,12,y,186)+3; }
+
   const itens=(data.itens||[]).filter(i=>i.acao);
-  const groups={}; itens.forEach(i=>{ groups[i.secao||'Geral']=groups[i.secao||'Geral']||[]; groups[i.secao||'Geral'].push(i); });
+  const groups={}; itens.forEach(i=>{ const key=i.secao||'Geral'; groups[key]=groups[key]||[]; groups[key].push(i); });
   Object.entries(groups).forEach(([sec,arr])=>{
-    if(y>265){ doc.addPage(); y=14; }
-    doc.setFillColor(238,244,255); doc.rect(10,y-5,190,8,'F'); doc.setFont('helvetica','bold'); doc.setTextColor(15,23,42); doc.text(sec,12,y); y+=6;
-    arr.forEach(i=>{ if(y>275){ doc.addPage(); y=14; } const ai=actionInfo(i.acao); doc.setFont('helvetica','bold'); doc.text(`${ai.label} • ${i.item}`,12,y); y+=5; if(i.obs){ doc.setFont('helvetica','normal'); y=pdfLine(doc,'Obs.: '+i.obs,16,y,178); } y+=2; });
+    y=pdfSectionHeader(doc,sec,y);
+    arr.forEach(i=>{
+      y=pdfEnsurePage(doc,y+5);
+      pdfStatusBadge(doc,i.acao,12,y);
+      const ai=actionInfo(i.acao);
+      doc.setFont('helvetica','bold'); doc.setFontSize(8.7); doc.setTextColor(15,23,42);
+      doc.text(String(i.item||'Item').slice(0,76),31,y);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.4); doc.setTextColor(71,85,105);
+      const meta=[]; if(i.criticidade&&i.criticidade!=='normal') meta.push('Criticidade: '+i.criticidade); if(i.fotos) meta.push('Fotos: '+i.fotos); if(i.updatedBy) meta.push('Por: '+i.updatedBy);
+      if(meta.length) doc.text(meta.join(' • '),31,y+4.3);
+      y+=8;
+      if(i.obs){ doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(51,65,85); y=pdfLine(doc,'Obs.: '+i.obs,31,y,158)+1; }
+      doc.setDrawColor(226,232,240); doc.line(12,y,198,y); y+=3;
+    });
   });
-  doc.setFontSize(8); doc.setTextColor(100); doc.text('Documento gerado pelo app separado OFICIN-IA Checklist V15.',12,292);
+  y=pdfEnsurePage(doc,y+10); doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(15,23,42); doc.text('Assinaturas / conferência',12,y); y+=15;
+  doc.setDrawColor(100,116,139); doc.line(12,y,70,y); doc.line(78,y,136,y); doc.line(144,y,198,y);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(100,116,139); doc.text('Responsável técnico',41,y+4,{align:'center'}); doc.text('Gestor / conferente',107,y+4,{align:'center'}); doc.text('Cliente / autorização',171,y+4,{align:'center'});
+  const total=doc.internal.getNumberOfPages(); for(let i=1;i<=total;i++){ doc.setPage(i); pdfFooter(doc); }
   doc.save(`checklist_${data.placa||'veiculo'}_${new Date().toISOString().slice(0,10)}.pdf`);
 }
 function gerarPDFEntrega(){ const payload={...payloadBase(), itens:getCriticalItems().map(i=>({...i, entrega:state.delivery[i.id]||{}})), diagnostico:'Checklist de entrega/conferência\n'+($('entregaObs').value||'')}; gerarPDF(payload); }
@@ -508,13 +702,15 @@ function printA4(entrega=false){
     .cols{display:grid;grid-template-columns:1fr 1fr;gap:2mm}
     .col{min-width:0}
     .sec{border:1px solid #111;margin:0 0 1.2mm;break-inside:avoid;page-break-inside:avoid}
-    .sec-title{background:#e9eef7;border-bottom:1px solid #111;font-weight:bold;font-size:7.6px;padding:1mm 1.1mm;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .row{display:grid;grid-template-columns:1fr 28mm;align-items:center;border-top:1px solid #ddd;min-height:4.3mm;padding:.55mm 1mm;gap:1mm}
+    .sec-title{display:grid;grid-template-columns:minmax(0,1fr) 4.4mm 4.4mm 4.4mm 5.8mm 5.3mm 4.8mm;align-items:center;background:#e9eef7;border-bottom:1px solid #111;font-weight:bold;font-size:7.4px;padding:.75mm .8mm;text-transform:uppercase;gap:.45mm}
+    .sec-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sec-title span:not(.sec-name){font-size:5.7px;text-align:center;letter-spacing:-.35px;white-space:nowrap}
+    .row{display:grid;grid-template-columns:minmax(0,1fr) 4.4mm 4.4mm 4.4mm 5.8mm 5.3mm 4.8mm;align-items:center;border-top:1px solid #ddd;min-height:3.95mm;padding:.45mm .8mm;gap:.45mm}
     .row:first-of-type{border-top:0}
-    .item{font-size:7.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .marks{font-size:6.7px;white-space:nowrap;text-align:right}
-    .marks b{display:inline-block;width:2.35mm;height:2.35mm;border:1px solid #111;margin:0 .45mm -0.3mm 0}
-    .legend{display:grid;grid-template-columns:repeat(6,1fr);gap:1mm;border:1px solid #111;padding:1mm;margin-bottom:2mm;font-size:7px;text-align:center}
+    .item{font-size:7.05px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:.8mm}
+    .row>b{display:block;width:2.75mm;height:2.75mm;border:1px solid #111;margin:auto;background:#fff}
+    .legend{display:grid;grid-template-columns:repeat(6,1fr);gap:1mm;border:1px solid #111;padding:.85mm;margin-bottom:1.5mm;font-size:6.8px;text-align:center}
+    .legend b{display:inline-block;width:2.3mm;height:2.3mm;border:1px solid #111;margin:0 .45mm -0.25mm 0}
     .footer{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5mm;margin-top:2mm;font-size:7px}
     .line{border-top:1px solid #111;text-align:center;padding-top:1mm;min-height:6mm}
     .mini{font-size:6.7px;text-align:center;margin-top:1mm;color:#333}
@@ -536,9 +732,9 @@ function printA4(entrega=false){
       pageCols.forEach(col=>{
         w.document.write(`<div class="col">`);
         col.secoes.forEach(sec=>{
-          w.document.write(`<div class="sec"><div class="sec-title">${esc(sec.emoji||'')} ${esc(sec.titulo||'Seção')}</div>`);
+          w.document.write(`<div class="sec"><div class="sec-title"><span class="sec-name">${esc(sec.emoji||'')} ${esc(sec.titulo||'Seção')}</span><span>OK</span><span>AT</span><span>TR</span><span>R/R</span><span>REV</span><span>NA</span></div>`);
           (sec.itens||[]).forEach(it=>{
-            w.document.write(`<div class="row"><div class="item">${esc(it.titulo||'Item')}</div><div class="marks"><b></b>OK <b></b>AT <b></b>TR <b></b>R/R <b></b>REV <b></b>N/A</div></div>`);
+            w.document.write(`<div class="row"><div class="item">${esc(it.titulo||'Item')}</div><b></b><b></b><b></b><b></b><b></b><b></b></div>`);
           });
           w.document.write(`</div>`);
         });
@@ -561,19 +757,67 @@ function printA4(entrega=false){
   setTimeout(()=>w.print(),300);
 }
 
-async function anexarOS(entrega=false){
-  const osRef=($('osRef').value||'').trim(); if(!osRef) return toast('Informe O.S./referência para anexar.');
-  const data=entrega?{entregaChecklist:state.delivery, entregaAtualizadaEm:nowISO()}:payloadBase();
-  const db=activeDb(); const cols=['ordens_servico','ordensServico','os']; let updated=false;
+function checklistResumoParaOS(data, entrega=false){
+  const itens=Array.isArray(data?.itens)?data.itens:[];
+  const crit=itens.filter(i=>ACTIONS_FINAL.has(i.acao));
+  return {
+    id:data?.id||state.lastSavedId||uid(),
+    tipo: entrega?'entrega':'tecnico',
+    app:data?.app||'OFICIN-IA-CHECKLIST-V15-12',
+    versao:data?.versao||'v15.12',
+    placa:data?.placa||placaNorm($('placa')?.value||''),
+    osRef:data?.osRef||($('osRef')?.value||'').trim(),
+    km:data?.km||($('km')?.value||'').trim(),
+    oficinaNome:data?.oficinaNome||state.session?.oficinaNome||'',
+    responsavel:data?.responsavel||state.session?.name||'',
+    responsavelPerfil:data?.responsavelPerfil||state.session?.role||'',
+    criadoEm:data?.criadoEm||nowISO(),
+    atualizadoEm:nowISO(),
+    stats:data?.stats||stats(),
+    criticos:crit.slice(0,25).map(i=>({id:i.id,secao:i.secao,item:i.item,acao:i.acao,acaoLabel:i.acaoLabel,obs:i.obs||''})),
+    totalCriticos:crit.length,
+    urlChecklist:location.href.split('#')[0]
+  };
+}
+async function anexarPayloadNaOS(data, entrega=false, silencioso=false){
+  const osRef=String(data?.osRef||$('osRef')?.value||'').trim();
+  if(!osRef){ if(!silencioso) toast('Informe O.S./referência para anexar.'); return false; }
+  const db=activeDb();
+  const cols=['ordens_servico','ordensServico','os'];
+  const resumo=checklistResumoParaOS(data,entrega);
+  const full=entrega?{entregaChecklist:state.delivery, entregaAtualizadaEm:nowISO(), ...resumo}:data;
+  const fv=window.firebase?.firestore?.FieldValue;
+  const update={
+    checklistId: resumo.id,
+    checklistResumo: full,
+    checklistUltimo: resumo,
+    checklistAtualizadoEm: fv?.serverTimestamp ? fv.serverTimestamp() : nowISO(),
+    checklistAppUrl: location.href.split('#')[0]
+  };
+  if(fv?.arrayUnion) update.checklistsTecnicos=fv.arrayUnion(resumo);
+  if(entrega){
+    update.checklistEntregaUltimo=resumo;
+    update.checklistEntregaResumo=full;
+    update.checklistEntregaAtualizadoEm=fv?.serverTimestamp ? fv.serverTimestamp() : nowISO();
+    if(fv?.arrayUnion) update.checklistsEntrega=fv.arrayUnion(resumo);
+  }
   for(const col of cols){
     try{
       const byId=await db.collection(col).doc(osRef).get();
-      if(byId.exists){ await byId.ref.set({checklistId:state.lastSavedId||data.id, checklistResumo:data, checklistAtualizadoEm:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}); updated=true; break; }
-      for(const f of ['numero','codigo','osRef','referencia']){ const snap=await db.collection(col).where(f,'==',osRef).limit(1).get(); if(!snap.empty){ await snap.docs[0].ref.set({checklistId:state.lastSavedId||data.id, checklistResumo:data, checklistAtualizadoEm:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}); updated=true; break; } }
-      if(updated) break;
+      if(byId.exists){ await byId.ref.set(update,{merge:true}); return true; }
+      for(const f of ['numero','codigo','osRef','referencia']){
+        const snap=await db.collection(col).where(f,'==',osRef).limit(1).get();
+        if(!snap.empty){ await snap.docs[0].ref.set(update,{merge:true}); return true; }
+      }
     }catch(e){ console.warn('anexar',col,e.message); }
   }
-  toast(updated?'Checklist anexado na O.S.':'Não encontrei a O.S. pelo número informado. Checklist ficou salvo/exportável.');
+  return false;
+}
+async function anexarOS(entrega=false){
+  const osRef=($('osRef').value||'').trim(); if(!osRef) return toast('Informe O.S./referência para anexar.');
+  const data=entrega?{entregaChecklist:state.delivery, entregaAtualizadaEm:nowISO(), ...payloadBase()}:payloadBase();
+  const updated=await anexarPayloadNaOS(data,entrega,false);
+  toast(updated?'Checklist anexado na O.S. do Jarvis. Abra a O.S. no SaaS para visualizar em Provas & Checklist.':'Não encontrei a O.S. pelo número informado. Checklist ficou salvo/exportável.');
 }
 
 function addPhotosToArray(files, target, done){
@@ -642,6 +886,7 @@ async function instalar(){ if(state.installPrompt){ state.installPrompt.prompt()
 function bind(){
   $('btnLogin')?.addEventListener('click',login); $('loginPwd')?.addEventListener('keydown',e=>{if(e.key==='Enter') login();});
   $('btnLogout')?.addEventListener('click',clearSession); $('btnTheme')?.addEventListener('click',()=>{state.theme=state.theme==='dark'?'light':'dark'; applyTheme();});
+  ['btnHomeTop','btnInicioFix','btnInicioResumo'].forEach(id=>$(id)?.addEventListener('click',irParaInicio));
   ['btnAbrirSaas','btnIrSaas'].forEach(id=>$(id)?.addEventListener('click',abrirSaas)); ['btnInstalar','btnInstalarLogin'].forEach(id=>$(id)?.addEventListener('click',instalar));
   $('btnBack')?.addEventListener('click',back); $('btnNext')?.addEventListener('click',next); $('btnNovo')?.addEventListener('click',()=>{ if(confirm('Zerar rascunho e iniciar novo checklist?')) clearDraft(); }); $('btnNovoFinal')?.addEventListener('click',()=>{ clearDraft(); go('screenInicio'); });
   $('placa')?.addEventListener('input',e=>{e.target.value=placaNorm(e.target.value); saveDraft();}); ['osRef','km','relato','diagnostico'].forEach(id=>$(id)?.addEventListener('input',saveDraft));
@@ -651,6 +896,7 @@ function bind(){
   $('fotoGeral')?.addEventListener('change',e=>addPhotosToArray(e.target.files,state.generalPhotos,()=>{renderPhotos(); toast('Fotos gerais adicionadas.');}));
   $('btnDitarRelato')?.addEventListener('click',dictateRelato); $('btnAudio')?.addEventListener('click',toggleAudio);
   $('btnSalvar')?.addEventListener('click',saveChecklist); $('btnPDF')?.addEventListener('click',()=>gerarPDF()); $('btnXLSX')?.addEventListener('click',()=>gerarXLSX('checklist')); $('btnA4')?.addEventListener('click',()=>printA4(false)); $('btnA4Topo')?.addEventListener('click',()=>printA4(false)); $('btnJSON')?.addEventListener('click',baixarJSON); $('btnAnexarOS')?.addEventListener('click',()=>anexarOS(false));
+  $('btnEditarAtual')?.addEventListener('click',()=>go('screenChecklist')); $('btnExcluirAtual')?.addEventListener('click',deleteCurrentChecklist);
   $('btnEntrega')?.addEventListener('click',abrirEntrega); $('btnSalvarEntrega')?.addEventListener('click',saveEntrega); $('btnPdfEntrega')?.addEventListener('click',gerarPDFEntrega); $('btnXlsxEntrega')?.addEventListener('click',()=>gerarXLSX('entrega')); $('btnVoltarResumo')?.addEventListener('click',()=>go('screenResumo')); $('btnA4Entrega')?.addEventListener('click',()=>printA4(true)); $('btnAnexarEntrega')?.addEventListener('click',()=>anexarOS(true));
   $('btnFecharGestao')?.addEventListener('click',()=>$('modalGestao').classList.add('hidden'));
   window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); state.installPrompt=e; });
@@ -660,7 +906,7 @@ async function boot(){
   if('serviceWorker' in navigator){ try{ await navigator.serviceWorker.register('./service-worker.js'); }catch(e){ console.warn('sw',e.message); } }
   $('loginUsr').value=localStorage.getItem('OFICINIA_CHECKLIST_V15_LAST_USER')||'';
   await loadModel(false); loadSession(true);
-  if(state.session){ await loadModel(true); restoreDraft(); renderAll(); go('screenInicio'); } else go('screenLogin');
+  if(state.session){ await loadModel(true); restoreDraft(); applyQueryPrefill(); renderAll(); go('screenInicio'); } else go('screenLogin');
 }
 
 document.addEventListener('DOMContentLoaded',boot);

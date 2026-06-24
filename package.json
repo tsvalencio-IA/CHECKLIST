@@ -1,8 +1,8 @@
 {
-  "name": "oficin-ia-checklist-v15-8-github-pages-apk-sem-auto-avanco",
-  "version": "15.10.0",
+  "name": "oficin-ia-checklist-v15-12-home-crud-pdf-premium",
+  "version": "15.12.0",
   "private": true,
-  "description": "OFICIN-IA Checklist separado para GitHub Pages com APK próprio. Workflow robusto; checklist sem avanço automático de seção.",
+  "description": "OFICIN-IA Checklist separado para GitHub Pages com APK próprio, botão início, salvar/editar/excluir checklist e PDF premium.",
   "scripts": {
     "prepare:apk": "node scripts/prepare-apk.js",
     "android:icons": "node scripts/generate-android-icons.js",

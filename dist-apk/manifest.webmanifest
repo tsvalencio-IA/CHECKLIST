@@ -1,7 +1,7 @@
 {
   "name": "Checklist Inteligente OFICIN-IA",
   "short_name": "Checklist",
-  "description": "Aplicativo separado para checklist técnico, entrega, histórico por placa, PDF, XLSX e impressão A4.",
+  "description": "Aplicativo separado para checklist técnico, entrega, histórico por placa, PDF, XLSX e impressão A4, sem avanço automático de seção.",
   "start_url": "./index.html?app=checklist",
   "scope": "./",
   "display": "standalone",
