@@ -204,6 +204,7 @@ async function login(){
     saveSession(sess,remember);
     await loadModel(true);
     restoreDraft();
+    applyQueryPrefill();
     renderAll();
     go('screenInicio');
     toast('Login autorizado.');
@@ -289,6 +290,21 @@ function go(screen){
   $('btnBack').textContent = screen==='screenInicio' ? '🏠 Início' : '⬅️ Voltar';
   $('btnNext').textContent = screen==='screenResumo' ? 'Entrega ➜' : screen==='screenEntrega' ? 'Finalizar ✅' : 'Avançar ➜';
   renderAll(); window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function applyQueryPrefill(){
+  try{
+    const q=new URLSearchParams(location.search||'');
+    const placa=q.get('placa')||q.get('plate')||'';
+    const os=q.get('os')||q.get('osRef')||q.get('ordem')||'';
+    const km=q.get('km')||'';
+    const relato=q.get('relato')||'';
+    if(placa && $('placa') && !$('placa').value) $('placa').value=placaNorm(placa);
+    if(os && $('osRef') && !$('osRef').value) $('osRef').value=String(os).trim();
+    if(km && $('km') && !$('km').value) $('km').value=String(km).trim();
+    if(relato && $('relato') && !$('relato').value) $('relato').value=String(relato).trim();
+    if(placa||os||km||relato) saveDraft();
+  }catch(e){ console.warn('query prefill',e); }
 }
 function next(){
   if(state.screen==='screenInicio') go('screenChecklist');
@@ -395,17 +411,22 @@ function payloadBase(){
   const placa=placaNorm($('placa')?.value||'');
   const allItems=itemMap();
   const itens=Object.values(state.answers).map(a=>({...a, fotos:(state.itemPhotos[a.id]||[]).length, criticidade:allItems[a.id]?.criticidade||'normal', obrigatorio:allItems[a.id]?.obrigatorio!==false}));
-  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15-8', versao:state.model?.versao||'v15.8', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef:($('osRef')?.value||'').trim(), km:($('km')?.value||'').trim(), responsavel:state.session?.name||'', responsavelPerfil:state.session?.role||'', relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:state.generalPhotos.length, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
+  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15-10', versao:state.model?.versao||'v15.10', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef:($('osRef')?.value||'').trim(), km:($('km')?.value||'').trim(), responsavel:state.session?.name||'', responsavelPerfil:state.session?.role||'', relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:state.generalPhotos.length, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
 }
 async function saveChecklist(){
   if(!placaNorm($('placa')?.value||'')) { toast('Informe a placa antes de salvar.'); go('screenInicio'); return null; }
   const payload=payloadBase(); setBusy('btnSalvar',true,'Salvando...');
   try{
     const db=activeDb();
-    if(state.lastSavedId){ await db.collection('checklists').doc(state.lastSavedId).set(payload,{merge:true}); }
+    if(state.lastSavedId){ await db.collection('checklists').doc(state.lastSavedId).set(payload,{merge:true}); payload.id=state.lastSavedId; }
     else { const ref=await db.collection('checklists').add(payload); state.lastSavedId=ref.id; payload.id=ref.id; await ref.set({id:ref.id},{merge:true}); }
     localStorage.setItem('OFICINIA_CHECKLIST_LAST_'+payload.placa, JSON.stringify(payload));
-    toast('Checklist salvo no Firebase.');
+    let msg='Checklist salvo no Firebase.';
+    if(payload.osRef){
+      const linked=await anexarPayloadNaOS(payload,false,true);
+      msg = linked ? 'Checklist salvo e anexado na O.S. do Jarvis.' : 'Checklist salvo. Não encontrei a O.S. informada para anexar.';
+    }
+    toast(msg);
     return payload;
   }catch(e){ console.warn(e); localStorage.setItem('OFICINIA_CHECKLIST_LOCAL_'+payload.id, JSON.stringify(payload)); toast('Firebase bloqueou/offline. Checklist salvo localmente.'); return payload; }
   finally{ setBusy('btnSalvar',false); }
@@ -562,13 +583,15 @@ function printA4(entrega=false){
     .cols{display:grid;grid-template-columns:1fr 1fr;gap:2mm}
     .col{min-width:0}
     .sec{border:1px solid #111;margin:0 0 1.2mm;break-inside:avoid;page-break-inside:avoid}
-    .sec-title{background:#e9eef7;border-bottom:1px solid #111;font-weight:bold;font-size:7.6px;padding:1mm 1.1mm;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .row{display:grid;grid-template-columns:1fr 28mm;align-items:center;border-top:1px solid #ddd;min-height:4.3mm;padding:.55mm 1mm;gap:1mm}
+    .sec-title{display:grid;grid-template-columns:minmax(0,1fr) 4.4mm 4.4mm 4.4mm 5.8mm 5.3mm 4.8mm;align-items:center;background:#e9eef7;border-bottom:1px solid #111;font-weight:bold;font-size:7.4px;padding:.75mm .8mm;text-transform:uppercase;gap:.45mm}
+    .sec-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sec-title span:not(.sec-name){font-size:5.7px;text-align:center;letter-spacing:-.35px;white-space:nowrap}
+    .row{display:grid;grid-template-columns:minmax(0,1fr) 4.4mm 4.4mm 4.4mm 5.8mm 5.3mm 4.8mm;align-items:center;border-top:1px solid #ddd;min-height:3.95mm;padding:.45mm .8mm;gap:.45mm}
     .row:first-of-type{border-top:0}
-    .item{font-size:7.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .marks{font-size:6.7px;white-space:nowrap;text-align:right}
-    .marks b{display:inline-block;width:2.35mm;height:2.35mm;border:1px solid #111;margin:0 .45mm -0.3mm 0}
-    .legend{display:grid;grid-template-columns:repeat(6,1fr);gap:1mm;border:1px solid #111;padding:1mm;margin-bottom:2mm;font-size:7px;text-align:center}
+    .item{font-size:7.05px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:.8mm}
+    .row>b{display:block;width:2.75mm;height:2.75mm;border:1px solid #111;margin:auto;background:#fff}
+    .legend{display:grid;grid-template-columns:repeat(6,1fr);gap:1mm;border:1px solid #111;padding:.85mm;margin-bottom:1.5mm;font-size:6.8px;text-align:center}
+    .legend b{display:inline-block;width:2.3mm;height:2.3mm;border:1px solid #111;margin:0 .45mm -0.25mm 0}
     .footer{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5mm;margin-top:2mm;font-size:7px}
     .line{border-top:1px solid #111;text-align:center;padding-top:1mm;min-height:6mm}
     .mini{font-size:6.7px;text-align:center;margin-top:1mm;color:#333}
@@ -590,9 +613,9 @@ function printA4(entrega=false){
       pageCols.forEach(col=>{
         w.document.write(`<div class="col">`);
         col.secoes.forEach(sec=>{
-          w.document.write(`<div class="sec"><div class="sec-title">${esc(sec.emoji||'')} ${esc(sec.titulo||'Seção')}</div>`);
+          w.document.write(`<div class="sec"><div class="sec-title"><span class="sec-name">${esc(sec.emoji||'')} ${esc(sec.titulo||'Seção')}</span><span>OK</span><span>AT</span><span>TR</span><span>R/R</span><span>REV</span><span>NA</span></div>`);
           (sec.itens||[]).forEach(it=>{
-            w.document.write(`<div class="row"><div class="item">${esc(it.titulo||'Item')}</div><div class="marks"><b></b>OK <b></b>AT <b></b>TR <b></b>R/R <b></b>REV <b></b>N/A</div></div>`);
+            w.document.write(`<div class="row"><div class="item">${esc(it.titulo||'Item')}</div><b></b><b></b><b></b><b></b><b></b><b></b></div>`);
           });
           w.document.write(`</div>`);
         });
@@ -615,19 +638,67 @@ function printA4(entrega=false){
   setTimeout(()=>w.print(),300);
 }
 
-async function anexarOS(entrega=false){
-  const osRef=($('osRef').value||'').trim(); if(!osRef) return toast('Informe O.S./referência para anexar.');
-  const data=entrega?{entregaChecklist:state.delivery, entregaAtualizadaEm:nowISO()}:payloadBase();
-  const db=activeDb(); const cols=['ordens_servico','ordensServico','os']; let updated=false;
+function checklistResumoParaOS(data, entrega=false){
+  const itens=Array.isArray(data?.itens)?data.itens:[];
+  const crit=itens.filter(i=>ACTIONS_FINAL.has(i.acao));
+  return {
+    id:data?.id||state.lastSavedId||uid(),
+    tipo: entrega?'entrega':'tecnico',
+    app:data?.app||'OFICIN-IA-CHECKLIST-V15-10',
+    versao:data?.versao||'v15.10',
+    placa:data?.placa||placaNorm($('placa')?.value||''),
+    osRef:data?.osRef||($('osRef')?.value||'').trim(),
+    km:data?.km||($('km')?.value||'').trim(),
+    oficinaNome:data?.oficinaNome||state.session?.oficinaNome||'',
+    responsavel:data?.responsavel||state.session?.name||'',
+    responsavelPerfil:data?.responsavelPerfil||state.session?.role||'',
+    criadoEm:data?.criadoEm||nowISO(),
+    atualizadoEm:nowISO(),
+    stats:data?.stats||stats(),
+    criticos:crit.slice(0,25).map(i=>({id:i.id,secao:i.secao,item:i.item,acao:i.acao,acaoLabel:i.acaoLabel,obs:i.obs||''})),
+    totalCriticos:crit.length,
+    urlChecklist:location.href.split('#')[0]
+  };
+}
+async function anexarPayloadNaOS(data, entrega=false, silencioso=false){
+  const osRef=String(data?.osRef||$('osRef')?.value||'').trim();
+  if(!osRef){ if(!silencioso) toast('Informe O.S./referência para anexar.'); return false; }
+  const db=activeDb();
+  const cols=['ordens_servico','ordensServico','os'];
+  const resumo=checklistResumoParaOS(data,entrega);
+  const full=entrega?{entregaChecklist:state.delivery, entregaAtualizadaEm:nowISO(), ...resumo}:data;
+  const fv=window.firebase?.firestore?.FieldValue;
+  const update={
+    checklistId: resumo.id,
+    checklistResumo: full,
+    checklistUltimo: resumo,
+    checklistAtualizadoEm: fv?.serverTimestamp ? fv.serverTimestamp() : nowISO(),
+    checklistAppUrl: location.href.split('#')[0]
+  };
+  if(fv?.arrayUnion) update.checklistsTecnicos=fv.arrayUnion(resumo);
+  if(entrega){
+    update.checklistEntregaUltimo=resumo;
+    update.checklistEntregaResumo=full;
+    update.checklistEntregaAtualizadoEm=fv?.serverTimestamp ? fv.serverTimestamp() : nowISO();
+    if(fv?.arrayUnion) update.checklistsEntrega=fv.arrayUnion(resumo);
+  }
   for(const col of cols){
     try{
       const byId=await db.collection(col).doc(osRef).get();
-      if(byId.exists){ await byId.ref.set({checklistId:state.lastSavedId||data.id, checklistResumo:data, checklistAtualizadoEm:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}); updated=true; break; }
-      for(const f of ['numero','codigo','osRef','referencia']){ const snap=await db.collection(col).where(f,'==',osRef).limit(1).get(); if(!snap.empty){ await snap.docs[0].ref.set({checklistId:state.lastSavedId||data.id, checklistResumo:data, checklistAtualizadoEm:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}); updated=true; break; } }
-      if(updated) break;
+      if(byId.exists){ await byId.ref.set(update,{merge:true}); return true; }
+      for(const f of ['numero','codigo','osRef','referencia']){
+        const snap=await db.collection(col).where(f,'==',osRef).limit(1).get();
+        if(!snap.empty){ await snap.docs[0].ref.set(update,{merge:true}); return true; }
+      }
     }catch(e){ console.warn('anexar',col,e.message); }
   }
-  toast(updated?'Checklist anexado na O.S.':'Não encontrei a O.S. pelo número informado. Checklist ficou salvo/exportável.');
+  return false;
+}
+async function anexarOS(entrega=false){
+  const osRef=($('osRef').value||'').trim(); if(!osRef) return toast('Informe O.S./referência para anexar.');
+  const data=entrega?{entregaChecklist:state.delivery, entregaAtualizadaEm:nowISO(), ...payloadBase()}:payloadBase();
+  const updated=await anexarPayloadNaOS(data,entrega,false);
+  toast(updated?'Checklist anexado na O.S. do Jarvis. Abra a O.S. no SaaS para visualizar em Provas & Checklist.':'Não encontrei a O.S. pelo número informado. Checklist ficou salvo/exportável.');
 }
 
 function addPhotosToArray(files, target, done){
@@ -714,7 +785,7 @@ async function boot(){
   if('serviceWorker' in navigator){ try{ await navigator.serviceWorker.register('./service-worker.js'); }catch(e){ console.warn('sw',e.message); } }
   $('loginUsr').value=localStorage.getItem('OFICINIA_CHECKLIST_V15_LAST_USER')||'';
   await loadModel(false); loadSession(true);
-  if(state.session){ await loadModel(true); restoreDraft(); renderAll(); go('screenInicio'); } else go('screenLogin');
+  if(state.session){ await loadModel(true); restoreDraft(); applyQueryPrefill(); renderAll(); go('screenInicio'); } else go('screenLogin');
 }
 
 document.addEventListener('DOMContentLoaded',boot);
