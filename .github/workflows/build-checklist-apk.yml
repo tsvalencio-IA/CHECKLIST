@@ -36,8 +36,8 @@ jobs:
           node - <<'NODE'
           const fs = require('fs');
           const pkg = {
-            name: 'oficin-ia-checklist-v15-7-github-pages-apk-saas-fix',
-            version: '15.7.0',
+            name: 'oficin-ia-checklist-v15-12-home-crud-pdf-premium',
+            version: '15.12.0',
             private: true,
             description: 'OFICIN-IA Checklist separado para GitHub Pages com APK próprio.',
             scripts: {
@@ -133,5 +133,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: OFICIN-IA-CHECKLIST-V15-7-GITHUB-PAGES-APK-SAAS-FIX
+          name: OFICIN-IA-CHECKLIST-V15-12-HOME-CRUD-PDF-PREMIUM
           path: android/app/build/outputs/apk/debug/app-debug.apk
