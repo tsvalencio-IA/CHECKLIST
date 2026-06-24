@@ -107,8 +107,10 @@ function clearSession(){ sessionStorage.removeItem(SESSION_KEY); localStorage.re
 function applySessionUi(){
   const s=state.session;
   $('sessPill').textContent = s ? `✅ ${s.name} • ${s.role}` : '🔒 Bloqueado';
-  $('responsavel').value = s ? s.name : '';
-  $('conferente').value = s ? s.name : '';
+  if($('responsavel')) $('responsavel').value = s ? s.name : '';
+  if($('tecnicoChecklist') && !$('tecnicoChecklist').value) $('tecnicoChecklist').value = s ? s.name : '';
+  if($('verificadorEntrega') && !$('verificadorEntrega').value) $('verificadorEntrega').value = s ? s.name : '';
+  if($('conferente') && !$('conferente').value) $('conferente').value = s ? s.name : '';
   $('btnLogout')?.classList.toggle('hidden', !s);
   $('btnHomeTop')?.classList.toggle('hidden', !s);
   applyBrand(s?.brand || DEFAULT_BRAND);
@@ -121,10 +123,10 @@ async function firstQuery(db, col, fields, value){
   return null;
 }
 function oficinaBrand(d){ return { name:d.brandName||d.nomeFantasia||d.nome||'OFICIN-IA Checklist', subtitle:d.brandTagline||'Checklist técnico integrado ao SaaS', color:d.brandColor||'#2563eb', footer:d.brandFooter||`${d.nomeFantasia||d.nome||'Oficina'} · Powered by thIAguinho Soluções Digitais` }; }
-function oficinaSess(doc,d,role='gestor',name='Gestor'){ return { tenantId:doc.id, oficinaId:doc.id, oficinaNome:d.nomeFantasia||d.nome||'Oficina', role, cargo:role, name, login:name, brand:oficinaBrand(d), firebaseConfig:d.firebaseConfig&&d.firebaseConfig.apiKey?d.firebaseConfig:null, actorType:'checklist', createdAt:nowISO() }; }
+function oficinaSess(doc,d,role='gestor',name='Gestor'){ return { tenantId:doc.id, oficinaId:doc.id, oficinaNome:d.nomeFantasia||d.nome||'Oficina', role, cargo:role, name, login:name, brand:oficinaBrand(d), firebaseConfig:d.firebaseConfig&&d.firebaseConfig.apiKey?d.firebaseConfig:null, cloudName:d.apiKeys?.cloudName||d.cloudName||'dmuvm1o6m', cloudPreset:d.apiKeys?.cloudPreset||d.cloudPreset||'evolution', actorType:'checklist', createdAt:nowISO() }; }
 function senhaBate(docData,pwd){ const campos=['senha','password','adminSenha','senhaAdmin','pwd']; return campos.some(k => String(docData?.[k]||'') === String(pwd||'')); }
 function cargoLabel(v){ const r=norm(v||'mecanico'); if(r.includes('geren')) return 'gerente'; if(r.includes('gest')) return 'gestor'; if(r.includes('admin')) return 'admin'; if(r.includes('tec')) return 'tecnico'; return 'mecanico'; }
-function funcionarioSess(docF,dF,ofDoc,ofData){ const role=cargoLabel(dF.cargo||dF.role||dF.perfil||'mecanico'); return { tenantId:ofDoc.id, oficinaId:ofDoc.id, oficinaNome:ofData.nomeFantasia||ofData.nome||'Oficina', role, cargo:role, name:dF.nome||dF.name||dF.usuario||dF.email||'Funcionário', login:dF.usuario||dF.login||dF.email||'', funcionarioId:docF.id, brand:oficinaBrand(ofData), firebaseConfig:ofData.firebaseConfig&&ofData.firebaseConfig.apiKey?ofData.firebaseConfig:null, actorType:'checklist', createdAt:nowISO() }; }
+function funcionarioSess(docF,dF,ofDoc,ofData){ const role=cargoLabel(dF.cargo||dF.role||dF.perfil||'mecanico'); return { tenantId:ofDoc.id, oficinaId:ofDoc.id, oficinaNome:ofData.nomeFantasia||ofData.nome||'Oficina', role, cargo:role, name:dF.nome||dF.name||dF.usuario||dF.email||'Funcionário', login:dF.usuario||dF.login||dF.email||'', funcionarioId:docF.id, brand:oficinaBrand(ofData), firebaseConfig:ofData.firebaseConfig&&ofData.firebaseConfig.apiKey?ofData.firebaseConfig:null, cloudName:ofData.apiKeys?.cloudName||ofData.cloudName||'dmuvm1o6m', cloudPreset:ofData.apiKeys?.cloudPreset||ofData.cloudPreset||'evolution', actorType:'checklist', createdAt:nowISO() }; }
 
 async function loginPorOficina(usr,pwd){
   const db=centralDb();
@@ -271,17 +273,17 @@ function stats(){
   };
 }
 function saveDraft(){
-  const draft={answers:state.answers,itemPhotos:state.itemPhotos,generalPhotos:state.generalPhotos,delivery:state.delivery,placa:$('placa')?.value||'',osRef:$('osRef')?.value||'',osSelecionada:state.osSelecionada||null,km:$('km')?.value||'',relato:$('relato')?.value||'',diagnostico:$('diagnostico')?.value||'',activeSection:state.activeSection,audioUrl:state.audioUrl};
+  const draft={answers:state.answers,itemPhotos:state.itemPhotos,generalPhotos:state.generalPhotos,delivery:state.delivery,placa:$('placa')?.value||'',osRef:$('osRef')?.value||'',osSelecionada:state.osSelecionada||null,km:$('km')?.value||'',tecnicoChecklist:$('tecnicoChecklist')?.value||'',verificadorEntrega:$('verificadorEntrega')?.value||'',entregaEntreguePor:$('entregaEntreguePor')?.value||'',entregaRecebidoPor:$('entregaRecebidoPor')?.value||'',entregaDoc:$('entregaDoc')?.value||'',entregaData:$('entregaData')?.value||'',conferente:$('conferente')?.value||'',entregaStatus:$('entregaStatus')?.value||'',entregaObs:$('entregaObs')?.value||'',relato:$('relato')?.value||'',diagnostico:$('diagnostico')?.value||'',activeSection:state.activeSection,audioUrl:state.audioUrl};
   localStorage.setItem(DRAFT_KEY,JSON.stringify(draft));
 }
 function restoreDraft(){
   try{
     const d=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null'); if(!d) return;
     state.answers=d.answers||{}; state.itemPhotos=d.itemPhotos||{}; state.generalPhotos=d.generalPhotos||[]; state.delivery=d.delivery||{}; state.osSelecionada=d.osSelecionada||null; state.activeSection=d.activeSection||state.activeSection; state.audioUrl=d.audioUrl||'';
-    if($('placa')) $('placa').value=d.placa||''; if($('osRef')) $('osRef').value=d.osRef||''; if($('km')) $('km').value=d.km||''; if($('relato')) $('relato').value=d.relato||''; if($('diagnostico')) $('diagnostico').value=d.diagnostico||'';
+    if($('placa')) $('placa').value=d.placa||''; if($('osRef')) $('osRef').value=d.osRef||''; if($('km')) $('km').value=d.km||''; if($('tecnicoChecklist')) $('tecnicoChecklist').value=d.tecnicoChecklist||state.session?.name||''; if($('verificadorEntrega')) $('verificadorEntrega').value=d.verificadorEntrega||state.session?.name||''; if($('conferente')) $('conferente').value=d.conferente||d.verificadorEntrega||state.session?.name||''; if($('entregaEntreguePor')) $('entregaEntreguePor').value=d.entregaEntreguePor||''; if($('entregaRecebidoPor')) $('entregaRecebidoPor').value=d.entregaRecebidoPor||''; if($('entregaDoc')) $('entregaDoc').value=d.entregaDoc||''; if($('entregaData')) $('entregaData').value=d.entregaData||''; if($('entregaStatus') && d.entregaStatus) $('entregaStatus').value=d.entregaStatus; if($('entregaObs')) $('entregaObs').value=d.entregaObs||''; if($('relato')) $('relato').value=d.relato||''; if($('diagnostico')) $('diagnostico').value=d.diagnostico||'';
   }catch(e){}
 }
-function clearDraft(){ localStorage.removeItem(DRAFT_KEY); state.answers={}; state.itemPhotos={}; state.generalPhotos=[]; state.delivery={}; state.history={os:[],checklists:[],entregas:[]}; state.osSelecionada=null; state.lastSavedId=''; ['placa','osRef','km','relato','diagnostico'].forEach(id=>{ if($(id)) $(id).value=''; }); renderAll(); }
+function clearDraft(){ localStorage.removeItem(DRAFT_KEY); state.answers={}; state.itemPhotos={}; state.generalPhotos=[]; state.delivery={}; state.history={os:[],checklists:[],entregas:[]}; state.osSelecionada=null; state.lastSavedId=''; ['placa','osRef','km','tecnicoChecklist','verificadorEntrega','entregaEntreguePor','entregaRecebidoPor','entregaDoc','entregaData','relato','diagnostico','entregaObs'].forEach(id=>{ if($(id)) $(id).value=''; }); if($('responsavel')) $('responsavel').value=state.session?.name||''; if($('tecnicoChecklist')) $('tecnicoChecklist').value=state.session?.name||''; if($('verificadorEntrega')) $('verificadorEntrega').value=state.session?.name||''; if($('conferente')) $('conferente').value=state.session?.name||''; renderAll(); }
 
 function go(screen){
   if(screen!=='screenLogin' && !sessionOk(state.session||loadSession(false))) screen='screenLogin';
@@ -415,32 +417,83 @@ function goNextSection(secId){
   }
 }
 
+function cloudinaryConfig(){
+  return { cloudName: state.session?.cloudName || localStorage.getItem('j_cloud_name') || 'dmuvm1o6m', cloudPreset: state.session?.cloudPreset || localStorage.getItem('j_cloud_preset') || 'evolution' };
+}
+function isDataUrl(src){ return /^data:image\//.test(String(src||'')); }
+function dataUrlToBlob(dataUrl){
+  const parts=String(dataUrl||'').split(','); const mime=(parts[0].match(/:(.*?);/)||[])[1]||'image/jpeg';
+  const bin=atob(parts[1]||''); const arr=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+  return new Blob([arr],{type:mime});
+}
+async function uploadPhotoToCloudinary(src, folder='checklists'){
+  if(!isDataUrl(src)) return src;
+  const cfg=cloudinaryConfig(); if(!cfg.cloudName || !cfg.cloudPreset) return src;
+  const fd=new FormData(); fd.append('file', dataUrlToBlob(src), `checklist_${Date.now()}.jpg`); fd.append('upload_preset', cfg.cloudPreset); fd.append('folder', `oficin-ia/${folder}`);
+  const res=await fetch(`https://api.cloudinary.com/v1_1/${cfg.cloudName}/image/upload`,{method:'POST',body:fd});
+  if(!res.ok) throw new Error('Falha ao enviar foto para Cloudinary.');
+  const json=await res.json(); return json.secure_url || json.url || src;
+}
+async function uploadAllPendingPhotos(){
+  let changed=false; const placa=placaNorm($('placa')?.value||'sem_placa');
+  for(let i=0;i<(state.generalPhotos||[]).length;i++){
+    const src=state.generalPhotos[i]; if(isDataUrl(src)){ state.generalPhotos[i]=await uploadPhotoToCloudinary(src,`checklists/${placa}/gerais`); changed=true; }
+  }
+  for(const [itemId,arr] of Object.entries(state.itemPhotos||{})){
+    for(let i=0;i<(arr||[]).length;i++){
+      const src=arr[i]; if(isDataUrl(src)){ arr[i]=await uploadPhotoToCloudinary(src,`checklists/${placa}/itens/${itemId}`); changed=true; }
+    }
+  }
+  if(changed){ saveDraft(); renderPhotos(); renderSections(); }
+}
+function allPhotoEntries(data){
+  const entries=[];
+  const gen = Array.isArray(data?.fotoUrls) ? data.fotoUrls : Array.isArray(data?.fotosGeraisUrls) ? data.fotosGeraisUrls : (data===undefined ? state.generalPhotos : []);
+  (gen||[]).forEach((url,idx)=>entries.push({url,label:`Foto geral ${idx+1}`,secao:'Fotos gerais'}));
+  const itemPhotos = data?.itemPhotos || data?.itemFotos || (data===undefined ? state.itemPhotos : {});
+  const itemById={}; (data?.itens||payloadBase().itens||[]).forEach(i=>{ itemById[i.id||i.checklistItemId]=i; (i.fotoUrls||i.fotosUrls||[]).forEach((url,idx)=>entries.push({url,label:`${i.item||'Item'} ${idx+1}`,secao:i.secao||'Item'})); });
+  Object.entries(itemPhotos||{}).forEach(([id,arr])=>{ const item=itemById[id]||{}; (arr||[]).forEach((url,idx)=>entries.push({url,label:`${item.item||id} ${idx+1}`,secao:item.secao||'Fotos por item'})); });
+  const seen=new Set(); return entries.filter(e=>e.url && !seen.has(e.url) && seen.add(e.url));
+}
+async function imageForPdf(src){
+  if(!src) return null;
+  if(isDataUrl(src)) return src;
+  try{ const res=await fetch(src,{mode:'cors'}); const blob=await res.blob(); return await new Promise(ok=>{ const r=new FileReader(); r.onload=()=>ok(r.result); r.onerror=()=>ok(null); r.readAsDataURL(blob); }); }catch(e){ return null; }
+}
+
 function payloadBase(){
   const placa=placaNorm($('placa')?.value||'');
   const allItems=itemMap();
-  const itens=Object.values(state.answers).map(a=>({...a, fotos:(state.itemPhotos[a.id]||[]).length, criticidade:allItems[a.id]?.criticidade||'normal', obrigatorio:allItems[a.id]?.obrigatorio!==false}));
+  const tecnico=($('tecnicoChecklist')?.value||state.session?.name||'').trim();
+  const verificador=($('verificadorEntrega')?.value||$('conferente')?.value||state.session?.name||'').trim();
+  const itens=Object.values(state.answers).map(a=>{ const fotos=state.itemPhotos[a.id]||[]; return {...a, fotos:fotos.length, fotoUrls:fotos, fotosUrls:fotos, criticidade:allItems[a.id]?.criticidade||'normal', obrigatorio:allItems[a.id]?.obrigatorio!==false}; });
   const osSel=state.osSelecionada||{}; const osRef=($('osRef')?.value||'').trim();
-  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15-13', versao:'v15.13', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef, osId:osSel.id||'', osColecao:osSel._col||'', osNumero:osSel.numero||osSel.codigo||osSel.osRef||osRef, osLabel:osSel.label||osRef, osStatus:osSel.status||osSel.etapa||'', osCliente:osSel.clienteNome||osSel.nomeCliente||osSel.cliente?.nome||'', osVeiculo:osSel.veiculoLabel||osSel.veiculoModelo||osSel.veiculo||osSel.veiculoSnapshot?.modelo||'', km:($('km')?.value||'').trim(), responsavel:state.session?.name||'', responsavelPerfil:state.session?.role||'', relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:state.generalPhotos.length, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
+  const fotoUrls=[...(state.generalPhotos||[])]; const itemFotos=JSON.parse(JSON.stringify(state.itemPhotos||{}));
+  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15-14', versao:'v15.14', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef, osId:osSel.id||'', osColecao:osSel._col||'', osNumero:osSel.numero||osSel.codigo||osSel.osRef||osRef, osLabel:osSel.label||osRef, osStatus:osSel.status||osSel.etapa||'', osCliente:osSel.clienteNome||osSel.nomeCliente||osSel.cliente?.nome||'', osVeiculo:osSel.veiculoLabel||osSel.veiculoModelo||osSel.veiculo||osSel.veiculoSnapshot?.modelo||'', km:($('km')?.value||'').trim(), responsavel:tecnico, tecnicoChecklist:tecnico, tecnicoNome:tecnico, responsavelLogin:state.session?.name||'', responsavelPerfil:state.session?.role||'', verificadorEntrega:verificador, relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:fotoUrls.length, fotoUrls, fotosGeraisUrls:fotoUrls, itemPhotos:itemFotos, itemFotos, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
 }
 async function saveChecklist(){
   if(!placaNorm($('placa')?.value||'')) { toast('Informe a placa antes de salvar.'); go('screenInicio'); return null; }
-  const payload=payloadBase(); setBusy('btnSalvar',true,'Salvando...');
+  let payload=null;
+  setBusy('btnSalvar',true,'Enviando fotos/salvando...');
   try{
+    await uploadAllPendingPhotos();
+    payload=payloadBase();
     const db=activeDb();
     if(state.lastSavedId){ await db.collection('checklists').doc(state.lastSavedId).set(payload,{merge:true}); payload.id=state.lastSavedId; }
     else { const ref=await db.collection('checklists').add(payload); state.lastSavedId=ref.id; payload.id=ref.id; await ref.set({id:ref.id},{merge:true}); }
     localStorage.setItem('OFICINIA_CHECKLIST_LAST_'+payload.placa, JSON.stringify(payload));
     let msg='Checklist salvo no Firebase.';
-    if(payload.osRef){
+    if(payload.osRef || payload.osId){
       const linked=await anexarPayloadNaOS(payload,false,true);
       msg = linked ? 'Checklist salvo e anexado na O.S. do Jarvis.' : 'Checklist salvo. Não encontrei a O.S. informada para anexar.';
     }
     toast(msg);
     renderResumo();
     return payload;
-  }catch(e){ console.warn(e); localStorage.setItem('OFICINIA_CHECKLIST_LOCAL_'+payload.id, JSON.stringify(payload)); toast('Firebase bloqueou/offline. Checklist salvo localmente.'); return payload; }
+  }catch(e){ console.warn(e); payload=payload||payloadBase(); localStorage.setItem('OFICINIA_CHECKLIST_LOCAL_'+payload.id, JSON.stringify(payload)); toast('Firebase/Cloudinary bloqueou ou está offline. Checklist salvo localmente.'); return payload; }
   finally{ setBusy('btnSalvar',false); }
 }
+
 function renderResumo(){
   const box=$('resumoLista'); if(!box) return;
   const itens=payloadBase().itens;
@@ -571,10 +624,13 @@ function hydrateChecklistForEdit(c){
     const id=i.id || i.checklistItemId || i.itemId;
     if(id) state.answers[id]={...i,id};
   });
-  state.itemPhotos={}; state.generalPhotos=[];
+  state.itemPhotos=c.itemPhotos||c.itemFotos||{}; state.generalPhotos=c.fotoUrls||c.fotosGeraisUrls||[];
   $('placa').value=c.placa||'';
   $('osRef').value=c.osRef||c.osNumero||''; state.osSelecionada=c.osId?{id:c.osId,_col:c.osColecao||'ordens_servico',numero:c.osNumero||c.osRef,label:c.osLabel||c.osNumero||c.osRef,status:c.osStatus||'',clienteNome:c.osCliente||'',veiculoLabel:c.osVeiculo||''}:null;
   $('km').value=c.km||'';
+  if($('tecnicoChecklist')) $('tecnicoChecklist').value=c.tecnicoChecklist||c.tecnicoNome||c.responsavel||state.session?.name||'';
+  if($('verificadorEntrega')) $('verificadorEntrega').value=c.verificadorEntrega||state.session?.name||'';
+  if($('conferente')) $('conferente').value=c.verificadorEntrega||state.session?.name||'';
   $('relato').value=c.relato||'';
   $('diagnostico').value=c.diagnostico||'';
   saveDraft(); renderAll(); renderResumo(); go('screenResumo');
@@ -600,14 +656,28 @@ function renderDelivery(force=false){
   $$('[data-delivery]',box).forEach(b=>b.addEventListener('click',()=>{ const id=b.dataset.delivery; state.delivery[id]=state.delivery[id]||{}; state.delivery[id].status=b.dataset.dstatus; state.delivery[id].atualizadoPor=state.session?.name||''; state.delivery[id].atualizadoEm=nowISO(); saveDraft(); renderDelivery(); }));
   $$('[data-delivery-obs]',box).forEach(t=>t.addEventListener('input',()=>{ const id=t.dataset.deliveryObs; state.delivery[id]=state.delivery[id]||{}; state.delivery[id].obs=t.value; saveDraft(); }));
 }
+function entregaPayloadBase(){
+  const base=payloadBase();
+  const itens=getCriticalItems().map(i=>({checklistItemId:i.id, item:i.item, secao:i.secao, acao:i.acao, acaoLabel:i.acaoLabel, diagnosticoObs:i.obs, fotos:i.fotos||0, fotoUrls:i.fotoUrls||[], entrega:state.delivery[i.id]||{status:'pendente'}}));
+  const dataEntrega=($('entregaData')?.value||'').trim();
+  return {id:uid(), checklistId:state.lastSavedId||base.id, tenantId:base.tenantId, oficinaNome:base.oficinaNome, placa:base.placa, osRef:base.osRef, osId:base.osId, osColecao:base.osColecao, osNumero:base.osNumero, osLabel:base.osLabel, km:base.km, tecnicoChecklist:base.tecnicoChecklist||base.responsavel, responsavel:base.responsavel, conferente:($('conferente')?.value||$('verificadorEntrega')?.value||state.session?.name||'').trim(), verificadorEntrega:($('verificadorEntrega')?.value||$('conferente')?.value||state.session?.name||'').trim(), entreguePor:($('entregaEntreguePor')?.value||'').trim(), recebidoPor:($('entregaRecebidoPor')?.value||'').trim(), documentoRecebedor:($('entregaDoc')?.value||'').trim(), dataEntrega:dataEntrega||nowISO(), perfil:state.session?.role||'', status:$('entregaStatus')?.value||'em_conferencia', observacaoFinal:$('entregaObs')?.value||'', itens, fotoUrls:base.fotoUrls||[], fotosGeraisUrls:base.fotoUrls||[], itemPhotos:base.itemPhotos||{}, itemFotos:base.itemFotos||{}, criadoEm:nowISO(), atualizadoEm:nowISO(), app:'OFICIN-IA-CHECKLIST-V15-14', versao:'v15.14', registroEntrega:true};
+}
 async function saveEntrega(){
-  const base=payloadBase(); const itens=getCriticalItems().map(i=>({checklistItemId:i.id, item:i.item, secao:i.secao, acao:i.acao, acaoLabel:i.acaoLabel, diagnosticoObs:i.obs, entrega:state.delivery[i.id]||{status:'pendente'}}));
-  const payload={id:uid(), checklistId:state.lastSavedId||base.id, tenantId:base.tenantId, oficinaNome:base.oficinaNome, placa:base.placa, osRef:base.osRef, km:base.km, conferente:state.session?.name||'', perfil:state.session?.role||'', status:$('entregaStatus').value, observacaoFinal:$('entregaObs').value||'', itens, criadoEm:nowISO(), app:'OFICIN-IA-CHECKLIST-V15'};
-  setBusy('btnSalvarEntrega',true,'Salvando...');
-  try{ const ref=await activeDb().collection('checklistsEntrega').add(payload); await ref.set({id:ref.id},{merge:true}); toast('Entrega salva no Firebase.'); return {...payload,id:ref.id}; }
-  catch(e){ console.warn(e); localStorage.setItem('OFICINIA_ENTREGA_LOCAL_'+payload.id,JSON.stringify(payload)); toast('Entrega salva localmente. Firebase bloqueou/offline.'); return payload; }
+  setBusy('btnSalvarEntrega',true,'Salvando entrega...');
+  let payload=null;
+  try{
+    await uploadAllPendingPhotos();
+    payload=entregaPayloadBase();
+    const ref=await activeDb().collection('checklistsEntrega').add(payload);
+    payload.id=ref.id; await ref.set({id:ref.id},{merge:true});
+    const linked=await anexarPayloadNaOS(payload,true,true);
+    toast(linked?'Registro de entrega salvo e anexado na O.S.':'Entrega salva no Firebase. Não encontrei a O.S. para anexar.');
+    return payload;
+  }
+  catch(e){ console.warn(e); payload=payload||entregaPayloadBase(); localStorage.setItem('OFICINIA_ENTREGA_LOCAL_'+payload.id,JSON.stringify(payload)); toast('Entrega salva localmente. Firebase/Cloudinary bloqueou ou está offline.'); return payload; }
   finally{ setBusy('btnSalvarEntrega',false); }
 }
+
 
 function pdfLine(doc,text,x,y,max=180){ const lines=doc.splitTextToSize(String(text||''),max); doc.text(lines,x,y); return y + lines.length*5; }
 function pdfColorForAction(acao){
@@ -654,65 +724,80 @@ function pdfStatusBadge(doc,acao,x,y){
   doc.setFillColor(c[0],c[1],c[2]); doc.roundedRect(x,y-4.4,16,6.4,2,2,'F');
   doc.setFont('helvetica','bold'); doc.setFontSize(6.5); doc.setTextColor(255,255,255); doc.text(label,x+8,y-.1,{align:'center'});
 }
-function gerarPDF(source){
+async function gerarPDF(source){
   const data=source||payloadBase(); const jsPDF=window.jspdf?.jsPDF; if(!jsPDF){ toast('Biblioteca PDF não carregou.'); return; }
   const doc=new jsPDF({unit:'mm',format:'a4'}); let y=0;
-  // Capa/cabeçalho premium
   doc.setFillColor(15,23,42); doc.rect(0,0,210,30,'F');
   doc.setFillColor(37,99,235); doc.circle(17,15,7,'F');
-  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.text('CHECKLIST TÉCNICO INTELIGENTE',28,14);
-  doc.setFontSize(8.5); doc.setFont('helvetica','normal'); doc.text('Avaliação técnica • histórico por placa • relatório integrado à O.S.',28,21);
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.text(data.registroEntrega?'REGISTRO DE ENTREGA':'CHECKLIST TÉCNICO INTELIGENTE',28,14);
+  doc.setFontSize(8.5); doc.setFont('helvetica','normal'); doc.text('Avaliação técnica • fotos • histórico por placa • integração com O.S.',28,21);
   doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.text('OFICIN-IA',17,16,{align:'center'});
-
   y=38;
-  doc.setFillColor(248,250,252); doc.roundedRect(10,y,190,24,3,3,'F'); doc.setDrawColor(226,232,240); doc.roundedRect(10,y,190,24,3,3,'S');
-  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(71,85,105);
-  doc.text('PLACA',16,y+7); doc.text('O.S.',56,y+7); doc.text('KM',96,y+7); doc.text('RESPONSÁVEL',128,y+7);
-  doc.setTextColor(15,23,42); doc.setFontSize(12);
-  doc.text(String(data.placa||'-'),16,y+16); doc.text(String(data.osRef||'-'),56,y+16); doc.text(String(data.km||'-'),96,y+16); doc.text(String(data.responsavel||state.session?.name||'-').slice(0,28),128,y+16);
-  y+=31;
-  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(71,85,105);
-  doc.text(`Oficina: ${data.oficinaNome||state.session?.oficinaNome||'-'}`,12,y); doc.text(`Gerado em: ${fmtDateTime(data.criadoEm||nowISO())}`,126,y); y+=8;
-
+  doc.setFillColor(248,250,252); doc.roundedRect(10,y,190,31,3,3,'F'); doc.setDrawColor(226,232,240); doc.roundedRect(10,y,190,31,3,3,'S');
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.2); doc.setTextColor(71,85,105);
+  doc.text('PLACA',16,y+7); doc.text('O.S.',52,y+7); doc.text('KM',84,y+7); doc.text('TÉCNICO',111,y+7); doc.text('CONFERENTE',158,y+7);
+  doc.setTextColor(15,23,42); doc.setFontSize(10.5);
+  doc.text(String(data.placa||'-'),16,y+16); doc.text(String(data.osRef||data.osNumero||'-').slice(0,14),52,y+16); doc.text(String(data.km||'-'),84,y+16); doc.text(String(data.tecnicoChecklist||data.tecnicoNome||data.responsavel||'-').slice(0,24),111,y+16); doc.text(String(data.verificadorEntrega||data.conferente||'-').slice(0,22),158,y+16);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.8); doc.setTextColor(71,85,105);
+  doc.text(`Oficina: ${data.oficinaNome||state.session?.oficinaNome||'-'}`,16,y+25); doc.text(`Gerado em: ${fmtDateTime(data.criadoEm||nowISO())}`,126,y+25); y+=38;
   const st=data.stats||{}; const boxes=[['OK',st.ok||0,[22,163,74]],['ATENÇÃO',st.atencao||0,[217,119,6]],['TROCAR',st.trocar||0,[220,38,38]],['AÇÕES TÉCNICAS',st.tecnicas||0,[14,165,233]],['PENDENTES',st.pending||0,[100,116,139]]];
   boxes.forEach((b,i)=>{ const x=10+i*38; doc.setFillColor(255,255,255); doc.setDrawColor(226,232,240); doc.roundedRect(x,y,36,18,3,3,'FD'); doc.setFillColor(...b[2]); doc.circle(x+7,y+9,3.2,'F'); doc.setTextColor(15,23,42); doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.text(String(b[1]),x+15,y+8); doc.setFontSize(6.8); doc.setTextColor(100,116,139); doc.text(b[0],x+15,y+14); });
   y+=25;
-
   if(data.relato){ y=pdfEnsurePage(doc,y); doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(15,23,42); doc.text('Relato do cliente',12,y); y+=5; doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(51,65,85); y=pdfLine(doc,data.relato,12,y,186)+3; }
   if(data.diagnostico){ y=pdfEnsurePage(doc,y); doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(15,23,42); doc.text('Diagnóstico técnico',12,y); y+=5; doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(51,65,85); y=pdfLine(doc,data.diagnostico,12,y,186)+3; }
-
-  const itens=(data.itens||[]).filter(i=>i.acao);
+  if(data.registroEntrega){
+    y=pdfSectionHeader(doc,'Registro de entrega',y);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(51,65,85);
+    y=pdfLine(doc,`Status: ${data.status||'-'} • Entregue por: ${data.entreguePor||'-'} • Recebido por: ${data.recebidoPor||'-'} • Documento/telefone: ${data.documentoRecebedor||'-'} • Data/hora: ${fmtDateTime(data.dataEntrega||data.criadoEm)}`,12,y,186)+2;
+    if(data.observacaoFinal) y=pdfLine(doc,'Observação final: '+data.observacaoFinal,12,y,186)+3;
+  }
+  const itens=(data.itens||[]).filter(i=>i.acao || i.entrega);
   const groups={}; itens.forEach(i=>{ const key=i.secao||'Geral'; groups[key]=groups[key]||[]; groups[key].push(i); });
   Object.entries(groups).forEach(([sec,arr])=>{
     y=pdfSectionHeader(doc,sec,y);
     arr.forEach(i=>{
       y=pdfEnsurePage(doc,y+5);
       pdfStatusBadge(doc,i.acao,12,y);
-      const ai=actionInfo(i.acao);
       doc.setFont('helvetica','bold'); doc.setFontSize(8.7); doc.setTextColor(15,23,42);
       doc.text(String(i.item||'Item').slice(0,76),31,y);
       doc.setFont('helvetica','normal'); doc.setFontSize(7.4); doc.setTextColor(71,85,105);
-      const meta=[]; if(i.criticidade&&i.criticidade!=='normal') meta.push('Criticidade: '+i.criticidade); if(i.fotos) meta.push('Fotos: '+i.fotos); if(i.updatedBy) meta.push('Por: '+i.updatedBy);
-      if(meta.length) doc.text(meta.join(' • '),31,y+4.3);
+      const meta=[]; if(i.acaoLabel) meta.push('Ação: '+i.acaoLabel); if(i.entrega?.status) meta.push('Entrega: '+i.entrega.status); if(i.criticidade&&i.criticidade!=='normal') meta.push('Criticidade: '+i.criticidade); if(i.fotos) meta.push('Fotos: '+i.fotos); if(i.updatedBy) meta.push('Por: '+i.updatedBy);
+      if(meta.length) doc.text(meta.join(' • ').slice(0,110),31,y+4.3);
       y+=8;
-      if(i.obs){ doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(51,65,85); y=pdfLine(doc,'Obs.: '+i.obs,31,y,158)+1; }
+      if(i.obs || i.diagnosticoObs || i.entrega?.obs){ doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(51,65,85); y=pdfLine(doc,'Obs.: '+(i.obs||i.diagnosticoObs||i.entrega?.obs),31,y,158)+1; }
       doc.setDrawColor(226,232,240); doc.line(12,y,198,y); y+=3;
     });
   });
-  y=pdfEnsurePage(doc,y+10); doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(15,23,42); doc.text('Assinaturas / conferência',12,y); y+=15;
+  const photos=allPhotoEntries(source?data:undefined).slice(0,24);
+  if(photos.length){
+    y=pdfSectionHeader(doc,`Fotos anexadas (${photos.length})`,y+4);
+    let col=0;
+    for(const ph of photos){
+      if(y+34>270){ pdfFooter(doc); doc.addPage(); y=14; col=0; }
+      const x=12 + col*47; const yy=y;
+      const img=await imageForPdf(ph.url);
+      doc.setDrawColor(226,232,240); doc.roundedRect(x,yy,42,30,2,2,'S');
+      if(img){ try{ doc.addImage(img,'JPEG',x+1,yy+1,40,24,undefined,'FAST'); }catch(e){ try{ doc.addImage(img,'PNG',x+1,yy+1,40,24,undefined,'FAST'); }catch(_){ doc.text('Imagem',x+14,yy+14); } } }
+      doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(71,85,105); doc.text(String(ph.label||'Foto').slice(0,24),x+1,yy+28);
+      col++; if(col>=4){ col=0; y+=34; }
+    }
+    if(col) y+=34;
+  }
+  y=pdfEnsurePage(doc,y+14); doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(15,23,42); doc.text('Assinaturas / conferência',12,y); y+=15;
   doc.setDrawColor(100,116,139); doc.line(12,y,70,y); doc.line(78,y,136,y); doc.line(144,y,198,y);
-  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(100,116,139); doc.text('Responsável técnico',41,y+4,{align:'center'}); doc.text('Gestor / conferente',107,y+4,{align:'center'}); doc.text('Cliente / autorização',171,y+4,{align:'center'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(100,116,139); doc.text('Responsável técnico',41,y+4,{align:'center'}); doc.text('Gestor / conferente',107,y+4,{align:'center'}); doc.text('Cliente / recebimento',171,y+4,{align:'center'});
   const total=doc.internal.getNumberOfPages(); for(let i=1;i<=total;i++){ doc.setPage(i); pdfFooter(doc); }
-  doc.save(`checklist_${data.placa||'veiculo'}_${new Date().toISOString().slice(0,10)}.pdf`);
+  doc.save(`${data.registroEntrega?'entrega':'checklist'}_${data.placa||'veiculo'}_${new Date().toISOString().slice(0,10)}.pdf`);
 }
-function gerarPDFEntrega(){ const payload={...payloadBase(), itens:getCriticalItems().map(i=>({...i, entrega:state.delivery[i.id]||{}})), diagnostico:'Checklist de entrega/conferência\n'+($('entregaObs').value||'')}; gerarPDF(payload); }
+
+function gerarPDFEntrega(){ gerarPDF(entregaPayloadBase()); }
 function gerarXLSX(kind='checklist'){
   if(!window.XLSX){ toast('Biblioteca XLSX não carregou.'); return; }
   const base=payloadBase();
   const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{Placa:base.placa,OS:base.osRef,KM:base.km,Oficina:base.oficinaNome,Responsavel:base.responsavel,Data:fmtDateTime(base.criadoEm),OK:base.stats.ok,Atencao:base.stats.atencao,Trocar:base.stats.trocar,AcoesTecnicas:base.stats.tecnicas,Pendentes:base.stats.pending}]),'Resumo');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(base.itens.map(i=>({Secao:i.secao,Item:i.item,Acao:i.acaoLabel||i.acao,Obs:i.obs||'',Obrigatorio:i.obrigatorio?'Sim':'Não',Criticidade:i.criticidade||'',Fotos:i.fotos||0,AtualizadoPor:i.updatedBy||''}))),'Itens');
-  const entrega=getCriticalItems().map(i=>({Secao:i.secao,Item:i.item,AcaoTecnica:i.acaoLabel,StatusEntrega:state.delivery[i.id]?.status||'pendente',ObsEntrega:state.delivery[i.id]?.obs||''}));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{Placa:base.placa,OS:base.osRef,KM:base.km,Oficina:base.oficinaNome,Tecnico:base.tecnicoChecklist||base.responsavel,ConferenteEntrega:base.verificadorEntrega||'',FotosGerais:(base.fotoUrls||[]).length,Data:fmtDateTime(base.criadoEm),OK:base.stats.ok,Atencao:base.stats.atencao,Trocar:base.stats.trocar,AcoesTecnicas:base.stats.tecnicas,Pendentes:base.stats.pending}]),'Resumo');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(base.itens.map(i=>({Secao:i.secao,Item:i.item,Acao:i.acaoLabel||i.acao,Obs:i.obs||'',Obrigatorio:i.obrigatorio?'Sim':'Não',Criticidade:i.criticidade||'',Fotos:i.fotos||0,LinksFotos:(i.fotoUrls||[]).join(' | '),AtualizadoPor:i.updatedBy||''}))),'Itens');
+  const entrega=getCriticalItems().map(i=>({Secao:i.secao,Item:i.item,AcaoTecnica:i.acaoLabel,StatusEntrega:state.delivery[i.id]?.status||'pendente',ObsEntrega:state.delivery[i.id]?.obs||'',Conferente:base.verificadorEntrega||'',EntreguePor:$('entregaEntreguePor')?.value||'',RecebidoPor:$('entregaRecebidoPor')?.value||'',DataEntrega:$('entregaData')?.value||''}));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(entrega),'Entrega');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet((state.history.os||[]).map(o=>({OS:o.numero||o.codigo||o.id,Status:o.status||o.etapa||'',Cliente:o.clienteNome||o.cliente?.nome||'',Data:fmtDateTime(o.criadoEm||o.createdAt||o.data)}))),'Historico_OS');
   XLSX.writeFile(wb,`${kind}_${base.placa||'veiculo'}_${new Date().toISOString().slice(0,10)}.xlsx`);
@@ -811,8 +896,8 @@ function checklistResumoParaOS(data, entrega=false){
   return {
     id:data?.id||state.lastSavedId||uid(),
     tipo: entrega?'entrega':'tecnico',
-    app:data?.app||'OFICIN-IA-CHECKLIST-V15-13',
-    versao:data?.versao||'v15.13',
+    app:data?.app||'OFICIN-IA-CHECKLIST-V15-14',
+    versao:data?.versao||'v15.14',
     placa:data?.placa||placaNorm($('placa')?.value||''),
     osRef:data?.osRef||($('osRef')?.value||'').trim(),
     osId:data?.osId||state.osSelecionada?.id||'',
@@ -821,12 +906,18 @@ function checklistResumoParaOS(data, entrega=false){
     osLabel:data?.osLabel||state.osSelecionada?.label||'',
     km:data?.km||($('km')?.value||'').trim(),
     oficinaNome:data?.oficinaNome||state.session?.oficinaNome||'',
-    responsavel:data?.responsavel||state.session?.name||'',
+    responsavel:data?.responsavel||data?.tecnicoChecklist||state.session?.name||'',
+    tecnicoChecklist:data?.tecnicoChecklist||data?.tecnicoNome||data?.responsavel||state.session?.name||'',
+    verificadorEntrega:data?.verificadorEntrega||data?.conferente||$('verificadorEntrega')?.value||'',
     responsavelPerfil:data?.responsavelPerfil||state.session?.role||'',
+    fotoUrls:data?.fotoUrls||data?.fotosGeraisUrls||[],
+    fotosGeraisUrls:data?.fotoUrls||data?.fotosGeraisUrls||[],
+    itemPhotos:data?.itemPhotos||data?.itemFotos||{},
+    itemFotos:data?.itemPhotos||data?.itemFotos||{},
     criadoEm:data?.criadoEm||nowISO(),
     atualizadoEm:nowISO(),
     stats:data?.stats||stats(),
-    criticos:crit.slice(0,25).map(i=>({id:i.id,secao:i.secao,item:i.item,acao:i.acao,acaoLabel:i.acaoLabel,obs:i.obs||''})),
+    criticos:crit.slice(0,25).map(i=>({id:i.id,secao:i.secao,item:i.item,acao:i.acao,acaoLabel:i.acaoLabel,obs:i.obs||'',fotoUrls:i.fotoUrls||[]})),
     totalCriticos:crit.length,
     urlChecklist:location.href.split('#')[0]
   };
@@ -838,21 +929,20 @@ async function anexarPayloadNaOS(data, entrega=false, silencioso=false){
   const db=activeDb();
   const cols=[data?.osColecao||state.osSelecionada?._col||'', 'ordens_servico','ordensServico','os'].filter((v,i,a)=>v&&a.indexOf(v)===i);
   const resumo=checklistResumoParaOS(data,entrega);
-  const full=entrega?{entregaChecklist:state.delivery, entregaAtualizadaEm:nowISO(), ...resumo}:data;
   const fv=window.firebase?.firestore?.FieldValue;
-  const update={
-    checklistId: resumo.id,
-    checklistResumo: full,
-    checklistUltimo: resumo,
-    checklistAtualizadoEm: fv?.serverTimestamp ? fv.serverTimestamp() : nowISO(),
-    checklistAppUrl: location.href.split('#')[0]
-  };
-  if(fv?.arrayUnion) update.checklistsTecnicos=fv.arrayUnion(resumo);
+  const update={ checklistAppUrl: location.href.split('#')[0] };
   if(entrega){
     update.checklistEntregaUltimo=resumo;
-    update.checklistEntregaResumo=full;
+    update.checklistEntregaResumo=data;
     update.checklistEntregaAtualizadoEm=fv?.serverTimestamp ? fv.serverTimestamp() : nowISO();
+    update.entregaRegistro=data;
     if(fv?.arrayUnion) update.checklistsEntrega=fv.arrayUnion(resumo);
+  }else{
+    update.checklistId=resumo.id;
+    update.checklistResumo=data;
+    update.checklistUltimo=resumo;
+    update.checklistAtualizadoEm=fv?.serverTimestamp ? fv.serverTimestamp() : nowISO();
+    if(fv?.arrayUnion) update.checklistsTecnicos=fv.arrayUnion(resumo);
   }
   for(const col of cols){
     try{
@@ -868,9 +958,10 @@ async function anexarPayloadNaOS(data, entrega=false, silencioso=false){
   }
   return false;
 }
+
 async function anexarOS(entrega=false){
   const osRef=($('osRef').value||'').trim(); if(!osRef) return toast('Informe O.S./referência para anexar.');
-  const data=entrega?{entregaChecklist:state.delivery, entregaAtualizadaEm:nowISO(), ...payloadBase()}:payloadBase();
+  const data=entrega?entregaPayloadBase():payloadBase();
   const updated=await anexarPayloadNaOS(data,entrega,false);
   toast(updated?'Checklist anexado na O.S. do Jarvis. Abra a O.S. no SaaS para visualizar em Provas & Checklist.':'Não encontrei a O.S. pelo número informado. Checklist ficou salvo/exportável.');
 }
@@ -944,7 +1035,7 @@ function bind(){
   ['btnHomeTop','btnInicioFix','btnInicioResumo'].forEach(id=>$(id)?.addEventListener('click',irParaInicio));
   ['btnAbrirSaas','btnIrSaas'].forEach(id=>$(id)?.addEventListener('click',abrirSaas)); ['btnInstalar','btnInstalarLogin'].forEach(id=>$(id)?.addEventListener('click',instalar));
   $('btnBack')?.addEventListener('click',back); $('btnNext')?.addEventListener('click',next); $('btnNovo')?.addEventListener('click',()=>{ if(confirm('Zerar rascunho e iniciar novo checklist?')) clearDraft(); }); $('btnNovoFinal')?.addEventListener('click',()=>{ clearDraft(); go('screenInicio'); });
-  $('placa')?.addEventListener('input',e=>{e.target.value=placaNorm(e.target.value); state.osSelecionada=null; renderOSSelecionadaInfo(); saveDraft();}); $('osRef')?.addEventListener('input',()=>{ state.osSelecionada=null; renderOSSelecionadaInfo(); saveDraft(); }); ['km','relato','diagnostico'].forEach(id=>$(id)?.addEventListener('input',saveDraft));
+  $('placa')?.addEventListener('input',e=>{e.target.value=placaNorm(e.target.value); state.osSelecionada=null; renderOSSelecionadaInfo(); saveDraft();}); $('osRef')?.addEventListener('input',()=>{ state.osSelecionada=null; renderOSSelecionadaInfo(); saveDraft(); }); ['km','tecnicoChecklist','verificadorEntrega','conferente','entregaEntreguePor','entregaRecebidoPor','entregaDoc','entregaData','entregaObs','relato','diagnostico'].forEach(id=>$(id)?.addEventListener('input',saveDraft));
   $('btnHistorico')?.addEventListener('click',buscarHistorico); $('btnHistoricoFinal')?.addEventListener('click',()=>{go('screenInicio'); buscarHistorico();});
   $('btnConsultar')?.addEventListener('click',consultar); $('btnRodarConsulta')?.addEventListener('click',consultar); $('btnFecharConsulta')?.addEventListener('click',()=>go('screenInicio')); $('btnVoltarInicioConsulta')?.addEventListener('click',()=>go('screenInicio')); $('btnExportConsulta')?.addEventListener('click',gerarConsultaXLSX);
   $('buscaItem')?.addEventListener('input',renderSections);

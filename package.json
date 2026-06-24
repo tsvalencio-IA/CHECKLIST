@@ -1,6 +1,6 @@
 {
-  "name": "oficin-ia-checklist-v15-13-buscar-os-placa",
-  "version": "15.13.0",
+  "name": "oficin-ia-checklist-v15-14-tecnico-entrega-fotos",
+  "version": "15.14.0",
   "private": true,
   "description": "OFICIN-IA Checklist separado para GitHub Pages com APK próprio, busca e seleção de O.S. pela placa, CRUD e PDF premium.",
   "scripts": {

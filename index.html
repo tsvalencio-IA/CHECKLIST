@@ -59,7 +59,8 @@
     <section class="card hidden" id="screenInicio">
       <div class="title"><h2>1) Identificação do veículo</h2><span class="pill" id="draftPill">Rascunho automático</span></div>
       <div class="row2"><div><label>Placa</label><input id="placa" class="inp" maxlength="8" placeholder="ABC1D23" autocomplete="off"></div><div><label>O.S. / Prisma / Referência</label><input id="osRef" class="inp" placeholder="Opcional"></div></div>
-      <div class="row2" style="margin-top:8px"><div><label>Responsável</label><input id="responsavel" class="inp" readonly></div><div><label>KM atual</label><input id="km" class="inp" inputmode="numeric" placeholder="Ex: 154320"></div></div>
+      <div class="row2" style="margin-top:8px"><div><label>Login/Sessão</label><input id="responsavel" class="inp" readonly></div><div><label>KM atual</label><input id="km" class="inp" inputmode="numeric" placeholder="Ex: 154320"></div></div>
+      <div class="row2" style="margin-top:8px"><div><label>Técnico que fez o checklist</label><input id="tecnicoChecklist" class="inp" placeholder="Nome do mecânico/técnico"></div><div><label>Conferente/verificador da entrega</label><input id="verificadorEntrega" class="inp" placeholder="Nome de quem vai conferir a entrega"></div></div>
       <div class="actions"><button class="btn" id="btnHistorico" type="button">🔎 Buscar/selecionar O.S. pela placa</button><button class="btn secondary" id="btnNovo" type="button">🆕 Zerar / novo checklist</button><button class="btn secondary" id="btnA4Topo" type="button">🖨️ Manual A4</button></div><div id="osSelecionadaInfo" class="notice">Digite a placa e toque em <b>Buscar/selecionar O.S. pela placa</b>. O mecânico não precisa decorar número de O.S.</div>
       <div class="actions"><button class="btn secondary" id="btnConsultar" type="button">📚 Consultar salvos</button><button class="btn secondary" id="btnIrSaas" type="button">🏠 Abrir SaaS</button><button class="btn secondary" id="btnInstalar" type="button">📲 Instalar checklist</button></div>
       <div id="historicoBox" class="history-list"></div>
@@ -103,7 +104,9 @@
     <section class="card hidden" id="screenEntrega">
       <div class="title"><h2>🚗 Checklist de entrega / conferência</h2><span class="pill" id="entregaPill">0%</span></div>
       <div class="notice">A entrega é gerada automaticamente a partir dos itens marcados como Trocar, Retificar, Regular, Lubrificar, Limpar, Ajustar, Revisar ou Atenção.</div>
-      <div class="row2" style="margin-top:10px"><div><label>Conferente</label><input id="conferente" class="inp" readonly></div><div><label>Status final</label><select id="entregaStatus" class="inp"><option value="em_conferencia">Em conferência</option><option value="pendente">Pendente</option><option value="liberado">Liberado para entrega</option></select></div></div>
+      <div class="row2" style="margin-top:10px"><div><label>Conferente/verificador</label><input id="conferente" class="inp" placeholder="Nome de quem conferiu"></div><div><label>Status final</label><select id="entregaStatus" class="inp"><option value="em_conferencia">Em conferência</option><option value="pendente">Pendente</option><option value="liberado">Liberado para entrega</option><option value="entregue">Entregue ao cliente</option></select></div></div>
+      <div class="row2" style="margin-top:8px"><div><label>Entregue por</label><input id="entregaEntreguePor" class="inp" placeholder="Funcionário que entregou o veículo"></div><div><label>Recebido por</label><input id="entregaRecebidoPor" class="inp" placeholder="Cliente/responsável que recebeu"></div></div>
+      <div class="row2" style="margin-top:8px"><div><label>Documento/telefone do recebedor</label><input id="entregaDoc" class="inp" placeholder="Opcional"></div><div><label>Data/hora da entrega</label><input id="entregaData" class="inp" type="datetime-local"></div></div>
       <div id="entregaLista" style="margin-top:10px"></div>
       <label style="margin-top:8px">Observação final da entrega</label><textarea id="entregaObs" placeholder="Ex: veículo testado, item conferido, pendência comunicada..."></textarea>
       <div class="actions"><button class="btn ok" id="btnSalvarEntrega" type="button">✅ Salvar entrega</button><button class="btn" id="btnPdfEntrega" type="button">📄 PDF entrega</button><button class="btn secondary" id="btnXlsxEntrega" type="button">📊 XLSX entrega</button></div>
@@ -122,7 +125,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="./js/config.js?v=15.13.0"></script>
-  <script src="./js/checklist.js?v=15.13.0"></script>
+  <script src="./js/config.js?v=15.14.0"></script>
+  <script src="./js/checklist.js?v=15.14.0"></script>
 </body>
 </html>
