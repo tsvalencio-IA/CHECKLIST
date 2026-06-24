@@ -1,8 +1,8 @@
 {
-  "name": "oficin-ia-checklist-v15-12-home-crud-pdf-premium",
-  "version": "15.12.0",
+  "name": "oficin-ia-checklist-v15-13-buscar-os-placa",
+  "version": "15.13.0",
   "private": true,
-  "description": "OFICIN-IA Checklist separado para GitHub Pages com APK próprio, botão início, salvar/editar/excluir checklist e PDF premium.",
+  "description": "OFICIN-IA Checklist separado para GitHub Pages com APK próprio, busca e seleção de O.S. pela placa, CRUD e PDF premium.",
   "scripts": {
     "prepare:apk": "node scripts/prepare-apk.js",
     "android:icons": "node scripts/generate-android-icons.js",

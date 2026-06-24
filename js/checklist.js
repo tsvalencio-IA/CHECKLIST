@@ -23,6 +23,7 @@ const state = {
   generalPhotos:[],
   delivery:{},
   history:{os:[], checklists:[], entregas:[]},
+  osSelecionada:null,
   consulta:[],
   lastSavedId:'',
   mediaRecorder:null,
@@ -270,17 +271,17 @@ function stats(){
   };
 }
 function saveDraft(){
-  const draft={answers:state.answers,itemPhotos:state.itemPhotos,generalPhotos:state.generalPhotos,delivery:state.delivery,placa:$('placa')?.value||'',osRef:$('osRef')?.value||'',km:$('km')?.value||'',relato:$('relato')?.value||'',diagnostico:$('diagnostico')?.value||'',activeSection:state.activeSection,audioUrl:state.audioUrl};
+  const draft={answers:state.answers,itemPhotos:state.itemPhotos,generalPhotos:state.generalPhotos,delivery:state.delivery,placa:$('placa')?.value||'',osRef:$('osRef')?.value||'',osSelecionada:state.osSelecionada||null,km:$('km')?.value||'',relato:$('relato')?.value||'',diagnostico:$('diagnostico')?.value||'',activeSection:state.activeSection,audioUrl:state.audioUrl};
   localStorage.setItem(DRAFT_KEY,JSON.stringify(draft));
 }
 function restoreDraft(){
   try{
     const d=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null'); if(!d) return;
-    state.answers=d.answers||{}; state.itemPhotos=d.itemPhotos||{}; state.generalPhotos=d.generalPhotos||[]; state.delivery=d.delivery||{}; state.activeSection=d.activeSection||state.activeSection; state.audioUrl=d.audioUrl||'';
+    state.answers=d.answers||{}; state.itemPhotos=d.itemPhotos||{}; state.generalPhotos=d.generalPhotos||[]; state.delivery=d.delivery||{}; state.osSelecionada=d.osSelecionada||null; state.activeSection=d.activeSection||state.activeSection; state.audioUrl=d.audioUrl||'';
     if($('placa')) $('placa').value=d.placa||''; if($('osRef')) $('osRef').value=d.osRef||''; if($('km')) $('km').value=d.km||''; if($('relato')) $('relato').value=d.relato||''; if($('diagnostico')) $('diagnostico').value=d.diagnostico||'';
   }catch(e){}
 }
-function clearDraft(){ localStorage.removeItem(DRAFT_KEY); state.answers={}; state.itemPhotos={}; state.generalPhotos=[]; state.delivery={}; state.history={os:[],checklists:[],entregas:[]}; state.lastSavedId=''; ['placa','osRef','km','relato','diagnostico'].forEach(id=>{ if($(id)) $(id).value=''; }); renderAll(); }
+function clearDraft(){ localStorage.removeItem(DRAFT_KEY); state.answers={}; state.itemPhotos={}; state.generalPhotos=[]; state.delivery={}; state.history={os:[],checklists:[],entregas:[]}; state.osSelecionada=null; state.lastSavedId=''; ['placa','osRef','km','relato','diagnostico'].forEach(id=>{ if($(id)) $(id).value=''; }); renderAll(); }
 
 function go(screen){
   if(screen!=='screenLogin' && !sessionOk(state.session||loadSession(false))) screen='screenLogin';
@@ -301,7 +302,7 @@ function applyQueryPrefill(){
     const km=q.get('km')||'';
     const relato=q.get('relato')||'';
     if(placa && $('placa') && !$('placa').value) $('placa').value=placaNorm(placa);
-    if(os && $('osRef') && !$('osRef').value) $('osRef').value=String(os).trim();
+    if(os && $('osRef') && !$('osRef').value){ $('osRef').value=String(os).trim(); state.osSelecionada={id:String(os).trim(), _col:'ordens_servico', label:String(os).trim(), origem:'link'}; }
     if(km && $('km') && !$('km').value) $('km').value=String(km).trim();
     if(relato && $('relato') && !$('relato').value) $('relato').value=String(relato).trim();
     if(placa||os||km||relato) saveDraft();
@@ -333,7 +334,7 @@ function irParaInicio(){
   toast('Início do Checklist. Seu rascunho foi mantido.');
 }
 
-function renderAll(){ renderSymptoms(); renderSections(); renderProgress(); renderPhotos(); renderDelivery(); }
+function renderAll(){ renderSymptoms(); renderSections(); renderProgress(); renderPhotos(); renderDelivery(); renderOSSelecionadaInfo(); }
 function renderProgress(){
   const s=stats();
   if($('progressBar')) $('progressBar').style.width=s.percent+'%';
@@ -418,7 +419,8 @@ function payloadBase(){
   const placa=placaNorm($('placa')?.value||'');
   const allItems=itemMap();
   const itens=Object.values(state.answers).map(a=>({...a, fotos:(state.itemPhotos[a.id]||[]).length, criticidade:allItems[a.id]?.criticidade||'normal', obrigatorio:allItems[a.id]?.obrigatorio!==false}));
-  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15-12', versao:state.model?.versao||'v15.12', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef:($('osRef')?.value||'').trim(), km:($('km')?.value||'').trim(), responsavel:state.session?.name||'', responsavelPerfil:state.session?.role||'', relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:state.generalPhotos.length, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
+  const osSel=state.osSelecionada||{}; const osRef=($('osRef')?.value||'').trim();
+  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15-13', versao:'v15.13', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef, osId:osSel.id||'', osColecao:osSel._col||'', osNumero:osSel.numero||osSel.codigo||osSel.osRef||osRef, osLabel:osSel.label||osRef, osStatus:osSel.status||osSel.etapa||'', osCliente:osSel.clienteNome||osSel.nomeCliente||osSel.cliente?.nome||'', osVeiculo:osSel.veiculoLabel||osSel.veiculoModelo||osSel.veiculo||osSel.veiculoSnapshot?.modelo||'', km:($('km')?.value||'').trim(), responsavel:state.session?.name||'', responsavelPerfil:state.session?.role||'', relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:state.generalPhotos.length, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
 }
 async function saveChecklist(){
   if(!placaNorm($('placa')?.value||'')) { toast('Informe a placa antes de salvar.'); go('screenInicio'); return null; }
@@ -449,6 +451,47 @@ function renderResumo(){
   box.innerHTML = `${state.lastSavedId?`<div class="notice warn"><b>Modo edição:</b> este checklist já foi salvo. Se alterar e tocar em “Salvar alterações”, o registro ${esc(state.lastSavedId)} será atualizado.</div>`:''}` + (crit.length ? crit.map(i=>`<div class="res-line"><b>${esc(i.secao)} • ${esc(i.item)}</b><span class="pill ${esc(actionInfo(i.acao).classe)}">${esc(actionInfo(i.acao).emoji)} ${esc(i.acaoLabel)}</span>${i.obs?`<small>${esc(i.obs)}</small>`:''}</div>`).join('') : '<div class="notice">Nenhum item crítico. Se necessário, gere PDF mesmo assim para registrar a avaliação.</div>');
 }
 
+
+function osIdent(o){
+  if(!o) return '';
+  const raw=o.numero||o.codigo||o.osRef||o.referencia||o.prisma||o.numeroPrisma||'';
+  return String(raw || (o.id ? 'OS '+String(o.id).slice(-6).toUpperCase() : '')).trim();
+}
+function osStatusTxt(o){ return String(o?.status||o?.etapa||o?.situacao||o?.fase||'status não informado').trim(); }
+function osAberta(o){
+  const st=norm(osStatusTxt(o));
+  return !/(entreg|finaliz|cancel|fechad|concluid|arquivad|baixad)/.test(st);
+}
+function osClienteTxt(o){ return String(o?.clienteNome||o?.nomeCliente||o?.cliente?.nome||o?.cliente||'Cliente não informado').trim(); }
+function osVeiculoTxt(o){ return String(o?.veiculoLabel||o?.veiculoModelo||o?.veiculoSnapshot?.modelo||o?.veiculo?.modelo||o?.modelo||o?.veiculo||'Veículo não informado').trim(); }
+function osKmTxt(o){ return String(o?.km||o?.quilometragem||o?.odometro||o?.veiculoKm||'').trim(); }
+function osDataVal(o){ return o?.criadoEm||o?.createdAt||o?.data||o?.dataAbertura||o?.atualizadoEm||''; }
+function renderOSSelecionadaInfo(){
+  const box=$('osSelecionadaInfo'); if(!box) return;
+  const os=state.osSelecionada; const osRef=($('osRef')?.value||'').trim();
+  if(os){
+    box.className='notice';
+    box.innerHTML=`<b>O.S. selecionada:</b> ${esc(osIdent(os)||os.label||os.id||osRef)}<br>${esc(osClienteTxt(os))} • ${esc(osVeiculoTxt(os))} • ${esc(osStatusTxt(os))}<br><small>Ao salvar, o checklist será anexado nessa O.S. do Jarvis.</small>`;
+  } else if(osRef){
+    box.className='notice warn';
+    box.innerHTML=`<b>O.S./referência manual:</b> ${esc(osRef)}<br><small>Para evitar erro, prefira digitar a placa e tocar em “Buscar/selecionar O.S. pela placa”.</small>`;
+  } else {
+    box.className='notice';
+    box.innerHTML='Digite a placa e toque em <b>Buscar/selecionar O.S. pela placa</b>. O mecânico não precisa decorar número de O.S.';
+  }
+}
+function selecionarOS(id){
+  const os=(state.history.os||[]).find(o=>String(o.id)===String(id));
+  if(!os) return toast('Não encontrei essa O.S. na lista carregada.');
+  state.osSelecionada={...os, label:osIdent(os)};
+  const placa=placaNorm(os.placa||os.placaNorm||os.veiculo?.placa||os.veiculoSnapshot?.placa||$('placa')?.value||'');
+  if(placa && $('placa')) $('placa').value=placa;
+  if($('osRef')) $('osRef').value=osIdent(os)||os.id||'';
+  const km=osKmTxt(os); if(km && $('km') && !$('km').value) $('km').value=km;
+  const relato=String(os.relato||os.descricao||os.desc||os.diagnostico||'').trim(); if(relato && $('relato') && !$('relato').value) $('relato').value=relato.slice(0,500);
+  saveDraft(); renderOSSelecionadaInfo(); renderHistorico(); toast('O.S. selecionada. Agora preencha o checklist e salve.');
+}
+
 async function buscarHistorico(){
   const placa=placaNorm($('placa').value); if(!placa){ toast('Informe a placa.'); return; }
   $('placa').value=placa; setBusy('btnHistorico',true,'Buscando...');
@@ -463,6 +506,7 @@ async function buscarHistorico(){
     if(!out.os.length) out.os = await queryMany('ordensServico',['placa','placaNorm','veiculo.placa']);
     out.checklists = await queryMany('checklists',['placa','placaNorm']);
     out.entregas = await queryMany('checklistsEntrega',['placa','placaNorm']);
+    out.os.sort((a,b)=>Number(osAberta(b))-Number(osAberta(a)) || new Date(osDataVal(b)||0)-new Date(osDataVal(a)||0));
     state.history=out; renderHistorico();
   }catch(e){ console.warn(e); toast('Histórico indisponível. Checklist continua funcionando.'); }
   finally{ setBusy('btnHistorico',false); saveDraft(); }
@@ -472,9 +516,11 @@ function renderHistorico(){
   const {os,checklists,entregas}=state.history;
   const html=[];
   html.push(`<div class="notice"><b>Histórico da placa ${esc(placaNorm($('placa').value))}</b><br>O.S.: ${os.length} • Checklists: ${checklists.length} • Entregas: ${entregas.length}</div>`);
-  os.slice(0,8).forEach(o=>html.push(`<div class="hist"><b>O.S. ${esc(o.numero||o.codigo||o.osRef||o.id)}</b><small>${esc(o.clienteNome||o.cliente?.nome||o.nomeCliente||'Cliente não informado')} • ${esc(o.status||o.etapa||'status não informado')} • ${fmtDateTime(o.criadoEm||o.createdAt||o.data)}</small></div>`));
+  os.slice(0,12).forEach(o=>{ const sel=state.osSelecionada && String(state.osSelecionada.id)===String(o.id); html.push(`<div class="hist"><b>${sel?'✅ ':''}O.S. ${esc(osIdent(o)||o.id)} ${osAberta(o)?'<span class="pill ok">Aberta</span>':'<span class="pill">Histórica</span>'}</b><small>${esc(osClienteTxt(o))} • ${esc(osVeiculoTxt(o))} • ${esc(osStatusTxt(o))} • ${fmtDateTime(osDataVal(o))}</small><div class="actions"><button class="btn ok small" data-select-os="${esc(o.id)}" type="button">🔗 Usar esta O.S.</button><button class="btn secondary small" data-copy-os="${esc(osIdent(o)||o.id)}" type="button">Copiar nº</button></div></div>`); });
   checklists.slice(0,8).forEach(c=>html.push(`<div class="hist"><b>Checklist ${esc(c.id)}</b><small>${fmtDateTime(c.criadoEm||c.createdAt)} • ${esc(c.responsavel||c.mecanico||'')} • Trocar: ${onlyFinite(c.stats?.trocar)}</small><div class="actions"><button class="btn secondary small" data-load-hist="${esc(c.id)}" type="button">✏️ Editar</button><button class="btn secondary small" data-pdf-hist="${esc(c.id)}" type="button">📄 PDF</button>${isGestor()?`<button class="btn bad small" data-del-check="${esc(c.id)}" data-col="${esc(c._col||'checklists')}" type="button">🗑️ Excluir</button>`:''}</div></div>`));
   box.innerHTML=html.join('');
+  $$('[data-select-os]',box).forEach(b=>b.addEventListener('click',()=>selecionarOS(b.dataset.selectOs)));
+  $$('[data-copy-os]',box).forEach(b=>b.addEventListener('click',async()=>{ try{ await navigator.clipboard.writeText(b.dataset.copyOs||''); toast('Número da O.S. copiado.'); }catch(e){ toast('O.S.: '+(b.dataset.copyOs||'')); } }));
   $$('[data-del-check]',box).forEach(b=>b.addEventListener('click',()=>deleteChecklist(b.dataset.col,b.dataset.delCheck)));
   $$('[data-load-hist]',box).forEach(b=>b.addEventListener('click',()=>loadChecklistFromList(state.history.checklists,b.dataset.loadHist)));
   $$('[data-pdf-hist]',box).forEach(b=>b.addEventListener('click',()=>{ const c=(state.history.checklists||[]).find(x=>x.id===b.dataset.pdfHist); if(c) gerarPDF(c); }));
@@ -511,6 +557,8 @@ function renderConsulta(){
   const box=$('consultaLista'); if(!box) return;
   if(!state.consulta.length){ box.innerHTML='<div class="notice warn">Nenhum checklist encontrado.</div>'; return; }
   box.innerHTML=state.consulta.map(c=>`<div class="hist"><b>${esc(c.placa||'-')} • ${esc(c.osRef||'sem O.S.')}</b><small>${fmtDateTime(c.criadoEm||c.createdAt)} • ${esc(c.responsavel||'')} • ${esc(c.oficinaNome||'')}</small><div class="badges"><span class="pill ok">OK ${onlyFinite(c.stats?.ok)}</span><span class="pill warn">Atenção ${onlyFinite(c.stats?.atencao)}</span><span class="pill bad">Trocar ${onlyFinite(c.stats?.trocar)}</span></div><div class="actions"><button class="btn secondary small" data-load-check="${esc(c.id)}" type="button">✏️ Editar</button><button class="btn secondary small" data-pdf-check="${esc(c.id)}" type="button">📄 PDF</button>${isGestor()?`<button class="btn bad small" data-del-check="${esc(c.id)}" data-col="checklists" type="button">🗑️ Excluir</button>`:''}</div></div>`).join('');
+  $$('[data-select-os]',box).forEach(b=>b.addEventListener('click',()=>selecionarOS(b.dataset.selectOs)));
+  $$('[data-copy-os]',box).forEach(b=>b.addEventListener('click',async()=>{ try{ await navigator.clipboard.writeText(b.dataset.copyOs||''); toast('Número da O.S. copiado.'); }catch(e){ toast('O.S.: '+(b.dataset.copyOs||'')); } }));
   $$('[data-del-check]',box).forEach(b=>b.addEventListener('click',()=>deleteChecklist(b.dataset.col,b.dataset.delCheck)));
   $$('[data-load-check]',box).forEach(b=>b.addEventListener('click',()=>loadChecklistFromConsulta(b.dataset.loadCheck)));
   $$('[data-pdf-check]',box).forEach(b=>b.addEventListener('click',()=>{ const c=state.consulta.find(x=>x.id===b.dataset.pdfCheck); if(c) gerarPDF(c); }));
@@ -525,7 +573,7 @@ function hydrateChecklistForEdit(c){
   });
   state.itemPhotos={}; state.generalPhotos=[];
   $('placa').value=c.placa||'';
-  $('osRef').value=c.osRef||'';
+  $('osRef').value=c.osRef||c.osNumero||''; state.osSelecionada=c.osId?{id:c.osId,_col:c.osColecao||'ordens_servico',numero:c.osNumero||c.osRef,label:c.osLabel||c.osNumero||c.osRef,status:c.osStatus||'',clienteNome:c.osCliente||'',veiculoLabel:c.osVeiculo||''}:null;
   $('km').value=c.km||'';
   $('relato').value=c.relato||'';
   $('diagnostico').value=c.diagnostico||'';
@@ -763,10 +811,14 @@ function checklistResumoParaOS(data, entrega=false){
   return {
     id:data?.id||state.lastSavedId||uid(),
     tipo: entrega?'entrega':'tecnico',
-    app:data?.app||'OFICIN-IA-CHECKLIST-V15-12',
-    versao:data?.versao||'v15.12',
+    app:data?.app||'OFICIN-IA-CHECKLIST-V15-13',
+    versao:data?.versao||'v15.13',
     placa:data?.placa||placaNorm($('placa')?.value||''),
     osRef:data?.osRef||($('osRef')?.value||'').trim(),
+    osId:data?.osId||state.osSelecionada?.id||'',
+    osColecao:data?.osColecao||state.osSelecionada?._col||'',
+    osNumero:data?.osNumero||state.osSelecionada?.numero||state.osSelecionada?.codigo||'',
+    osLabel:data?.osLabel||state.osSelecionada?.label||'',
     km:data?.km||($('km')?.value||'').trim(),
     oficinaNome:data?.oficinaNome||state.session?.oficinaNome||'',
     responsavel:data?.responsavel||state.session?.name||'',
@@ -781,9 +833,10 @@ function checklistResumoParaOS(data, entrega=false){
 }
 async function anexarPayloadNaOS(data, entrega=false, silencioso=false){
   const osRef=String(data?.osRef||$('osRef')?.value||'').trim();
-  if(!osRef){ if(!silencioso) toast('Informe O.S./referência para anexar.'); return false; }
+  const osId=String(data?.osId||state.osSelecionada?.id||'').trim();
+  if(!osRef && !osId){ if(!silencioso) toast('Informe ou selecione uma O.S. para anexar.'); return false; }
   const db=activeDb();
-  const cols=['ordens_servico','ordensServico','os'];
+  const cols=[data?.osColecao||state.osSelecionada?._col||'', 'ordens_servico','ordensServico','os'].filter((v,i,a)=>v&&a.indexOf(v)===i);
   const resumo=checklistResumoParaOS(data,entrega);
   const full=entrega?{entregaChecklist:state.delivery, entregaAtualizadaEm:nowISO(), ...resumo}:data;
   const fv=window.firebase?.firestore?.FieldValue;
@@ -803,9 +856,11 @@ async function anexarPayloadNaOS(data, entrega=false, silencioso=false){
   }
   for(const col of cols){
     try{
-      const byId=await db.collection(col).doc(osRef).get();
-      if(byId.exists){ await byId.ref.set(update,{merge:true}); return true; }
-      for(const f of ['numero','codigo','osRef','referencia']){
+      for(const directId of [osId, osRef].filter((v,i,a)=>v&&a.indexOf(v)===i)){
+        const byId=await db.collection(col).doc(directId).get();
+        if(byId.exists){ await byId.ref.set(update,{merge:true}); return true; }
+      }
+      for(const f of ['numero','codigo','osRef','referencia','prisma','numeroPrisma']){
         const snap=await db.collection(col).where(f,'==',osRef).limit(1).get();
         if(!snap.empty){ await snap.docs[0].ref.set(update,{merge:true}); return true; }
       }
@@ -889,7 +944,7 @@ function bind(){
   ['btnHomeTop','btnInicioFix','btnInicioResumo'].forEach(id=>$(id)?.addEventListener('click',irParaInicio));
   ['btnAbrirSaas','btnIrSaas'].forEach(id=>$(id)?.addEventListener('click',abrirSaas)); ['btnInstalar','btnInstalarLogin'].forEach(id=>$(id)?.addEventListener('click',instalar));
   $('btnBack')?.addEventListener('click',back); $('btnNext')?.addEventListener('click',next); $('btnNovo')?.addEventListener('click',()=>{ if(confirm('Zerar rascunho e iniciar novo checklist?')) clearDraft(); }); $('btnNovoFinal')?.addEventListener('click',()=>{ clearDraft(); go('screenInicio'); });
-  $('placa')?.addEventListener('input',e=>{e.target.value=placaNorm(e.target.value); saveDraft();}); ['osRef','km','relato','diagnostico'].forEach(id=>$(id)?.addEventListener('input',saveDraft));
+  $('placa')?.addEventListener('input',e=>{e.target.value=placaNorm(e.target.value); state.osSelecionada=null; renderOSSelecionadaInfo(); saveDraft();}); $('osRef')?.addEventListener('input',()=>{ state.osSelecionada=null; renderOSSelecionadaInfo(); saveDraft(); }); ['km','relato','diagnostico'].forEach(id=>$(id)?.addEventListener('input',saveDraft));
   $('btnHistorico')?.addEventListener('click',buscarHistorico); $('btnHistoricoFinal')?.addEventListener('click',()=>{go('screenInicio'); buscarHistorico();});
   $('btnConsultar')?.addEventListener('click',consultar); $('btnRodarConsulta')?.addEventListener('click',consultar); $('btnFecharConsulta')?.addEventListener('click',()=>go('screenInicio')); $('btnVoltarInicioConsulta')?.addEventListener('click',()=>go('screenInicio')); $('btnExportConsulta')?.addEventListener('click',gerarConsultaXLSX);
   $('buscaItem')?.addEventListener('input',renderSections);

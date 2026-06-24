@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Checklist">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Checklist técnico automotivo separado do SaaS, integrado ao mesmo Firebase.">
+  <meta name="description" content="Checklist técnico automotivo separado do SaaS, integrado ao mesmo Firebase, com seleção de O.S. pela placa.">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/icons/checklist-192.png">
   <link rel="apple-touch-icon" href="./assets/icons/checklist-192.png">
@@ -60,7 +60,7 @@
       <div class="title"><h2>1) Identificação do veículo</h2><span class="pill" id="draftPill">Rascunho automático</span></div>
       <div class="row2"><div><label>Placa</label><input id="placa" class="inp" maxlength="8" placeholder="ABC1D23" autocomplete="off"></div><div><label>O.S. / Prisma / Referência</label><input id="osRef" class="inp" placeholder="Opcional"></div></div>
       <div class="row2" style="margin-top:8px"><div><label>Responsável</label><input id="responsavel" class="inp" readonly></div><div><label>KM atual</label><input id="km" class="inp" inputmode="numeric" placeholder="Ex: 154320"></div></div>
-      <div class="actions"><button class="btn" id="btnHistorico" type="button">🔎 Buscar histórico por placa</button><button class="btn secondary" id="btnNovo" type="button">🆕 Zerar / novo checklist</button><button class="btn secondary" id="btnA4Topo" type="button">🖨️ Manual A4</button></div>
+      <div class="actions"><button class="btn" id="btnHistorico" type="button">🔎 Buscar/selecionar O.S. pela placa</button><button class="btn secondary" id="btnNovo" type="button">🆕 Zerar / novo checklist</button><button class="btn secondary" id="btnA4Topo" type="button">🖨️ Manual A4</button></div><div id="osSelecionadaInfo" class="notice">Digite a placa e toque em <b>Buscar/selecionar O.S. pela placa</b>. O mecânico não precisa decorar número de O.S.</div>
       <div class="actions"><button class="btn secondary" id="btnConsultar" type="button">📚 Consultar salvos</button><button class="btn secondary" id="btnIrSaas" type="button">🏠 Abrir SaaS</button><button class="btn secondary" id="btnInstalar" type="button">📲 Instalar checklist</button></div>
       <div id="historicoBox" class="history-list"></div>
     </section>
@@ -122,7 +122,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="./js/config.js?v=15.12.0"></script>
-  <script src="./js/checklist.js?v=15.12.0"></script>
+  <script src="./js/config.js?v=15.13.0"></script>
+  <script src="./js/checklist.js?v=15.13.0"></script>
 </body>
 </html>

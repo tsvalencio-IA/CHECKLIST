@@ -100,7 +100,7 @@ A impressão manual do mecânico foi compactada para o padrão oficina em até 2
 - O botão inferior não deixa ir para relato/fotos enquanto houver item pendente no checklist técnico.
 
 
-## V15.12
+## V15.13
 
 - Botão **Ir para início** no topo e na barra inferior.
 - Fluxo explícito para **Salvar / Editar / Excluir checklist salvo**.
