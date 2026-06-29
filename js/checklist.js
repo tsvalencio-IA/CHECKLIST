@@ -6,10 +6,14 @@ const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 const APP = window.CHECKLIST_APP || {};
 const SESSION_KEY = 'OFICINIA_CHECKLIST_V15_SESSION';
 const DRAFT_KEY = 'OFICINIA_CHECKLIST_V15_DRAFT';
-const MODEL_KEY = 'OFICINIA_CHECKLIST_V15_17_MODEL';
+const MODEL_KEY = 'OFICINIA_CHECKLIST_V15_MODEL';
 const THEME_KEY = 'OFICINIA_CHECKLIST_V15_THEME';
 const DEFAULT_BRAND = { name:'Checklist Inteligente OFICIN-IA', subtitle:'App separado • APK próprio • mesmo Firebase', color:'#2563eb', footer:'Powered by thIAguinho Soluções Digitais' };
 const ACTIONS_FINAL = new Set(['atencao','trocar','retificar','regular','ajustar','lubrificar','limpar','revisar']);
+const ACTIONS_COTACAO = new Set(['atencao','trocar','retificar','regular','ajustar','lubrificar','limpar','revisar']);
+const PECA_ACTIONS = new Set(['trocar']);
+const SERVICO_ACTIONS = new Set(['retificar','regular','ajustar','lubrificar','limpar']);
+const AVALIAR_ACTIONS = new Set(['atencao','revisar']);
 
 const state = {
   model:null,
@@ -30,6 +34,7 @@ const state = {
   audioChunks:[],
   audioUrl:'',
   installPrompt:null,
+  photoTarget:null,
   theme: localStorage.getItem(THEME_KEY) || 'light'
 };
 
@@ -216,29 +221,14 @@ async function login(){
   finally{ setBusy('btnLogin',false); }
 }
 
-function modelRank(model){
-  const s=String(model?.versao||'');
-  const m=s.match(/v15[.\-]?(\d+)/i) || s.match(/15\.(\d+)/);
-  if(m) return Number(m[1])||0;
-  if(s.includes('v15.15') || s.includes('15.15')) return 15;
-  return 0;
-}
-
 async function loadModel(tryRemote=false){
   let model=null;
-  try{ const res=await fetch('./data/checklist-model.json?v=15.15.0',{cache:'no-store'}); model=await res.json(); }catch(e){ console.warn('model local',e); }
-  try{
-    const saved=JSON.parse(localStorage.getItem(MODEL_KEY)||'null');
-    if(saved && saved.secoes && modelRank(saved) >= modelRank(model)) model=saved;
-  }catch(e){}
+  try{ const res=await fetch('./data/checklist-model.json?v=15.0.0',{cache:'no-store'}); model=await res.json(); }catch(e){ console.warn('model local',e); }
+  try{ const saved=JSON.parse(localStorage.getItem(MODEL_KEY)||'null'); if(saved && saved.secoes) model=saved; }catch(e){}
   if(tryRemote && state.session){
     try{
       const doc=await activeDb().collection('checklistModelos').doc('default').get();
-      const remote=doc.exists ? doc.data()?.model : null;
-      if(remote?.secoes && modelRank(remote) >= modelRank(model)){
-        model=remote;
-        localStorage.setItem(MODEL_KEY,JSON.stringify(model));
-      }
+      if(doc.exists && doc.data()?.model?.secoes){ model=doc.data().model; localStorage.setItem(MODEL_KEY,JSON.stringify(model)); }
     }catch(e){ console.warn('modelo remoto indisponível',e.message); }
   }
   state.model=model || {versao:'fallback',acoesPadrao:[],sintomas:[],secoes:[]};
@@ -287,6 +277,81 @@ function stats(){
     percent:total?Math.round((answered/total)*100):0
   };
 }
+
+
+function posicaoInfoFromText(text){
+  const n=norm(text);
+  const pos=[];
+  const add=(code,label)=>{ if(!pos.find(p=>p.code===code)) pos.push({code,label}); };
+  if(/dianteir/.test(n) && /esquerd/.test(n)) add('DE','dianteiro esquerdo');
+  if(/dianteir/.test(n) && /direit/.test(n)) add('DD','dianteiro direito');
+  if(/traseir/.test(n) && /esquerd/.test(n)) add('TE','traseiro esquerdo');
+  if(/traseir/.test(n) && /direit/.test(n)) add('TD','traseiro direito');
+  if(/motorista/.test(n) && !pos.length) add('MOT','motorista');
+  if(/passageiro/.test(n) && !pos.length) add('PASS','passageiro');
+  if(/dianteir/.test(n) && !/esquerd|direit/.test(n)) add('DIANT','dianteiro');
+  if(/traseir/.test(n) && !/esquerd|direit/.test(n)) add('TRAS','traseiro');
+  if(/esquerd/.test(n) && !pos.length) add('ESQ','esquerdo');
+  if(/direit/.test(n) && !pos.length) add('DIR','direito');
+  return pos;
+}
+function quoteBaseName(item){
+  const raw=String(item?.item||item?.titulo||'Item').trim();
+  const n=norm(raw);
+  const rules=[
+    [/cubo.*rolamento|rolamento.*cubo/,'Cubo com rolamento'],[/rolamento.*roda/,'Rolamento de roda'],[/pneu/,'Pneu'],[/pastilha/,'Jogo de pastilha de freio'],[/disco.*freio/,'Disco de freio'],[/tambor.*freio/,'Tambor de freio'],[/lona|sapata/,'Jogo lona/sapata de freio'],[/cilindro.*roda/,'Cilindro de roda'],[/pinca/,'Pinça de freio'],[/fluido.*freio/,'Fluido de freio'],[/flexiv|tubul.*freio/,'Flexível/tubulação de freio'],[/freio.*mao/,'Freio de mão'],
+    [/amortecedor/,'Amortecedor'],[/coxim.*batente|batente.*coifa|coifa.*amortecedor/,'Kit coxim/batente/coifa do amortecedor'],[/bieleta/,'Bieleta'],[/bandeja/,'Bandeja de suspensão'],[/bucha/,'Bucha de suspensão'],[/pivo/,'Pivô de suspensão'],[/terminal|axial/,'Terminal/axial de direção'],[/caixa.*direcao/,'Caixa de direção'],[/alinhamento|balanceamento/,'Alinhamento / balanceamento'],
+    [/oleo.*motor/,'Óleo do motor'],[/filtro.*oleo/,'Filtro de óleo'],[/filtro.*ar/,'Filtro de ar'],[/filtro.*combustivel/,'Filtro de combustível'],[/filtro.*cabine|filtro.*ar condicionado/,'Filtro de cabine'],[/vela/,'Velas de ignição'],[/bobina/,'Bobina de ignição'],[/cabo.*vela/,'Cabo de vela'],[/correia.*dentada|corrente/,'Kit correia dentada/corrente'],[/correia.*acessor/,'Correia de acessórios'],[/tensor|rolamento.*guia/,'Tensor/rolamento guia'],[/coxim.*motor|coxim.*cambio/,'Coxim motor/câmbio'],
+    [/sensor.*nivel.*combustivel|boia/,'Sensor de nível de combustível / boia'],[/flange|tampa.*bomba/,'Flange/tampa da bomba de combustível'],[/anel.*vedacao/,'Anel de vedação da flange/bomba'],[/pre filtro|prefiltro/,'Pré-filtro da bomba de combustível'],[/bomba.*combustivel/,'Bomba de combustível'],[/regulador.*pressao/,'Regulador de pressão'],[/sonda/,'Sonda lambda'],[/sensor.*map|sensor.*maf/,'Sensor MAP/MAF'],[/sensor.*tps/,'Sensor TPS'],[/sensor.*rotacao/,'Sensor de rotação'],[/sensor.*fase/,'Sensor de fase/comando'],[/tbi|corpo.*borboleta/,'Limpeza/revisão do TBI'],[/bico.*injetor/,'Limpeza/revisão dos bicos injetores'],
+    [/liquido.*arrefecimento/,'Líquido de arrefecimento'],[/radiador/,'Radiador'],[/mangueira|abracadeira/,'Mangueira/abraçadeira'],[/valvula.*termostatica/,'Válvula termostática'],[/bomba.*agua/,'Bomba d’água'],[/ventoinha|eletroventilador/,'Ventoinha/eletroventilador'],[/reservatorio.*tampa|tampa.*reservatorio/,'Reservatório/tampa'],
+    [/embreagem/,'Kit embreagem'],[/semi eixo|semieixo|homocinetica/,'Semi-eixo/homocinética'],[/coifa.*homocinetica/,'Coifa da homocinética'],[/suporte.*cambio|coxim.*cambio/,'Suporte/coxim do câmbio'],
+    [/bateria/,'Bateria'],[/alternador/,'Alternador'],[/motor.*partida/,'Motor de partida'],[/fusivel|rele/,'Fusível/relé'],[/aterramento|chicote/,'Aterramento/chicote'],[/farol/,'Farol/lâmpada'],[/lanterna/,'Lanterna/lâmpada'],[/seta|pisca/,'Seta/pisca-alerta'],[/luz.*freio/,'Luz de freio'],[/luz.*re|luz.*placa/,'Luz de ré/placa'],[/painel.*instrument|cluster|marcador.*combustivel/,'Painel/cluster marcador'],
+    [/retrovisor/,'Retrovisor'],[/parachoque|acabamento.*externo|parabarro/,'Acabamento externo/parachoque'],[/placa.*dianteira|placa.*traseira/,'Placa/suporte'],[/fechadura.*capo|trava.*capo/,'Fechadura/trava do capô'],[/fechadura.*porta malas|trava.*porta malas/,'Fechadura/trava porta-malas'],[/amortecedor.*tampa|amortecedor.*porta malas/,'Amortecedor da tampa traseira'],[/fechadura/,'Fechadura de porta'],[/dobradica/,'Dobradiça de porta'],[/limitador|freio.*porta/,'Limitador/freio de porta'],[/macaneta/,'Maçaneta'],[/borracha.*porta|vedacao/,'Borracha/vedação de porta'],[/forro.*porta/,'Forro de porta'],[/presilha|grampo/,'Presilha/grampo'],
+    [/vidro.*porta/,'Vidro de porta'],[/maquina.*vidro|motor.*vidro/,'Máquina/motor do vidro'],[/botao.*vidro/,'Botão do vidro'],[/canaleta/,'Canaleta dos vidros'],[/pestana|borracha.*vidro/,'Pestana/borracha externa do vidro'],[/pino.*trava|acabamento.*trava/,'Acabamento/pino de trava'],[/palheta/,'Palheta limpador'],[/esguicho|reservatorio.*limpador/,'Esguicho/reservatório limpador'],[/desembacador/,'Desembaçador traseiro'],
+    [/compressor.*ar/,'Compressor do ar condicionado'],[/carga.*gas|gas.*vazamento/,'Carga de gás/teste de vazamento'],[/higienizacao/,'Higienização do ar condicionado'],[/ventilador.*interno/,'Ventilador interno'],[/cinto/,'Cinto de segurança'],[/buzina/,'Buzina'],[/comando.*limpador|comando.*seta|comando.*farol/,'Comando de coluna'],[/trava.*eletrica|alarme/,'Travas elétricas/alarme'],[/banco|trilho/,'Banco/trilho'],[/forro.*teto/,'Forro do teto'],[/carpete|assoalho/,'Carpete/assoalho'],[/porta luvas|console/,'Porta-luvas/console']
+  ];
+  for(const [re,name] of rules){ if(re.test(n)) return name; }
+  return raw.replace(/\b(dianteir[oa]s?|traseir[oa]s?|esquerd[oa]|direit[oa]|motorista|passageiro)\b/gi,'').replace(/\s+/g,' ').trim() || raw;
+}
+function quoteKind(item){
+  const ac=item?.acao||''; const title=norm(item?.item||'');
+  if(!ACTIONS_COTACAO.has(ac)) return 'ignorar';
+  if(SERVICO_ACTIONS.has(ac)) return 'servico';
+  if(AVALIAR_ACTIONS.has(ac)) return /pneu|pastilha|disco|tambor|lona|sapata|cilindro|pinca|fluido|filtro|vela|bobina|correia|tensor|sensor|bomba|sonda|mangueira|valvula|radiador|ventoinha|reservatorio|embreagem|homocinet|bateria|alternador|farol|lanterna|luz|retrovisor|fechadura|vidro|palheta|compressor|buzina/.test(title) ? 'avaliar' : 'servico';
+  if(/alinhamento|balanceamento|scanner|codigo.*falha|limpeza|higienizacao|carga.*gas|vazamento|teste|rodagem|marcha lenta|ruido|temperatura|conferencia|estado geral/.test(title)) return 'servico';
+  return 'peca';
+}
+function inferQty(item, pos){
+  const t=norm(item?.item||'');
+  if(pos.length===1 && ['DE','DD','TE','TD','ESQ','DIR','MOT','PASS'].includes(pos[0].code)) return 1;
+  if(/dianteiros|traseiros|duas|2/.test(t)) return 2;
+  if(/pneus|rodas/.test(t) && !pos.length) return 4;
+  if(/bieletas|palhetas|farol baixo alto|setas|dobradicas|borrachas.*portas/.test(t)) return 2;
+  if(/pastilha/.test(t)) return 1; // jogo
+  return 1;
+}
+function compactObs(list,max=140){
+  const txt=(list||[]).map(x=>String(x.obs||x.diagnosticoObs||'').trim()).filter(Boolean).join(' | ');
+  return txt.length>max?txt.slice(0,max-1)+'…':txt;
+}
+function buildQuoteData(data){
+  const itens=(data?.itens||payloadBase().itens||[]).filter(i=>ACTIONS_COTACAO.has(i.acao));
+  const pecas={}, servicos={}, avaliar={};
+  const add=(bucket,key,row)=>{ const g=bucket[key]||(bucket[key]={nome:row.nome,acao:row.acao,acaoLabel:row.acaoLabel,qtd:0,posicoes:[],itens:[],obs:[],fotos:[]}); g.qtd+=row.qtd; row.posicoes.forEach(p=>{if(!g.posicoes.includes(p.code)) g.posicoes.push(p.code)}); g.itens.push(row); if(row.obs) g.obs.push(row.obs); (row.fotos||[]).forEach(f=>{if(!g.fotos.includes(f)) g.fotos.push(f)}); };
+  itens.forEach(i=>{
+    const pos=posicaoInfoFromText((i.item||'')+' '+(i.obs||'')); const nome=quoteBaseName(i); const kind=quoteKind(i); const qtd=inferQty(i,pos); const row={...i,nome,kind,qtd,posicoes:pos,obs:i.obs||'',fotos:i.fotoUrls||i.fotosUrls||[]};
+    if(kind==='peca') add(pecas,norm(nome),row); else if(kind==='servico') add(servicos,norm(nome+' '+(i.acao||'')),row); else if(kind==='avaliar') add(avaliar,norm(nome),row);
+  });
+  const arr=o=>Object.values(o).sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt-BR'));
+  return {pecas:arr(pecas), servicos:arr(servicos), avaliar:arr(avaliar), totalItens:itens.length, totalPecas:arr(pecas).reduce((s,g)=>s+g.qtd,0), totalServicos:arr(servicos).length, totalAvaliar:arr(avaliar).length};
+}
+function groupDetails(g){ return (g.itens||[]).map(x=>`${x.secao}: ${x.item} (${x.acaoLabel||x.acao})`).join(' • '); }
+function photoThumbsHtml(g){ const fotos=(g.fotos||[]).slice(0,4); return fotos.length?`<div class="quote-photo-mini">${fotos.map(f=>`<img src="${esc(f)}" alt="foto">`).join('')}</div>`:''; }
+function renderQuoteGroup(title, groups, empty){
+  if(!groups.length) return `<div class="quote-group"><h3>${esc(title)}</h3><div class="notice">${esc(empty||'Nenhum item.')}</div></div>`;
+  return `<div class="quote-group"><h3>${esc(title)}</h3>${groups.map(g=>`<div class="quote-row"><div class="quote-qtd">${esc(g.qtd)}x</div><div class="quote-main"><b>${esc(g.nome)}</b><small>Posições: ${esc(g.posicoes.length?g.posicoes.join(', '):'confirmar')} • ${esc(g.acaoLabel||'')}</small><div class="quote-details">${esc(groupDetails(g)).slice(0,240)}</div>${photoThumbsHtml(g)}</div><div class="quote-obs"><small>${esc(compactObs(g.itens)||'Sem observação específica.')}</small></div></div>`).join('')}</div>`;
+}
+
 function saveDraft(){
   const draft={answers:state.answers,itemPhotos:state.itemPhotos,generalPhotos:state.generalPhotos,delivery:state.delivery,placa:$('placa')?.value||'',osRef:$('osRef')?.value||'',osSelecionada:state.osSelecionada||null,km:$('km')?.value||'',tecnicoChecklist:$('tecnicoChecklist')?.value||'',verificadorEntrega:$('verificadorEntrega')?.value||'',entregaEntreguePor:$('entregaEntreguePor')?.value||'',entregaRecebidoPor:$('entregaRecebidoPor')?.value||'',entregaDoc:$('entregaDoc')?.value||'',entregaData:$('entregaData')?.value||'',conferente:$('conferente')?.value||'',entregaStatus:$('entregaStatus')?.value||'',entregaObs:$('entregaObs')?.value||'',relato:$('relato')?.value||'',diagnostico:$('diagnostico')?.value||'',activeSection:state.activeSection,audioUrl:state.audioUrl};
   localStorage.setItem(DRAFT_KEY,JSON.stringify(draft));
@@ -385,65 +450,10 @@ function renderSections(){
   $$('[data-action]').forEach(b=>b.addEventListener('click',()=>setAction(b.dataset.item,b.dataset.action)));
   $$('[data-next-section]').forEach(b=>b.addEventListener('click',()=>goNextSection(b.dataset.nextSection)));
   $$('[data-obs]').forEach(t=>t.addEventListener('input',()=>{ ensureAnswer(t.dataset.obs).obs=t.value; saveDraft(); renderProgress(); }));
-  $$('[data-quote-field]').forEach(el=>el.addEventListener(el.tagName==='SELECT'?'change':'input',()=>updateQuoteField(el.dataset.quoteItem,el.dataset.quoteField,el.value)));
   $$('[data-dictate]').forEach(b=>b.addEventListener('click',()=>dictateToItem(b.dataset.dictate)));
+  $$('[data-photo-choice]').forEach(b=>b.addEventListener('click',()=>openPhotoChoice(b.dataset.photoChoice)));
   $$('[data-photo-item]').forEach(inp=>inp.addEventListener('change',e=>addItemPhotos(inp.dataset.photoItem,e.target.files)));
-  $$('[data-photo-item-gallery]').forEach(inp=>inp.addEventListener('change',e=>addItemPhotos(inp.dataset.photoItemGallery,e.target.files)));
 }
-
-function cotacaoPrecisa(acao){ return ['trocar','atencao','revisar','retificar','regular','ajustar','lubrificar','limpar'].includes(String(acao||'')); }
-function posicaoCompacta(txt){
-  const p=inferPosicao({item:txt||''});
-  return p || '';
-}
-function pecaSolicitadaPadrao(item,acao){
-  const t=String(item?.titulo||item?.item||'').trim(); const n=norm(t);
-  if(['regular','ajustar','lubrificar','limpar','retificar'].includes(acao)) return t;
-  if(n.includes('cubo') && n.includes('rolamento')) return 'Cubo com rolamento';
-  if(n.includes('rolamento de roda')) return 'Rolamento de roda';
-  if(n.includes('pneu')) return 'Pneu';
-  if(n.includes('amortecedor')) return 'Amortecedor';
-  if(n.includes('bandeja')) return 'Bandeja';
-  if(n.includes('bieleta')) return 'Bieleta';
-  if(n.includes('pivo')) return 'Pivô';
-  if(n.includes('pastilha')) return 'Pastilha de freio';
-  if(n.includes('disco de freio')) return 'Disco de freio';
-  if(n.includes('lona') || n.includes('sapata')) return 'Lona/sapata de freio';
-  if(n.includes('sensor de nivel')) return 'Sensor de nível de combustível / boia';
-  if(n.includes('flange')) return 'Flange/tampa da bomba de combustível';
-  if(n.includes('anel de vedacao')) return 'Anel de vedação';
-  if(n.includes('vidro')) return t;
-  if(n.includes('forro porta')) return t;
-  return t;
-}
-function tipoCotacaoPadrao(acao,item){
-  const n=norm(item?.titulo||item?.item||'');
-  if(acao==='trocar') return 'PEÇA';
-  if(['regular','ajustar','lubrificar','limpar','retificar'].includes(acao)) return 'SERVIÇO';
-  if(n.includes('cubo')||n.includes('rolamento')||n.includes('sensor')||n.includes('pneu')||n.includes('amortecedor')||n.includes('bateria')||n.includes('bomba')) return 'PEÇA';
-  return 'AVALIAR';
-}
-function qtdPadrao(acao,item){ return acao==='trocar' ? 1 : ''; }
-function cotacaoDefault(item,acao){ return {qtd:qtdPadrao(acao,item), peca:pecaSolicitadaPadrao(item,acao), posicao:posicaoCompacta(item?.titulo||item?.item||''), tipo:tipoCotacaoPadrao(acao,item), aprovado:'', fornecedor:'', marca:'', codigo:'', valor:''}; }
-function ensureCotacao(itemId){
-  const ans=ensureAnswer(itemId); const im=itemMap()[itemId]||{};
-  const def=cotacaoDefault(im, ans.acao);
-  ans.cotacao={...def, ...(ans.cotacao||{})};
-  if(!ans.cotacao.peca) ans.cotacao.peca=def.peca;
-  if(!ans.cotacao.tipo) ans.cotacao.tipo=def.tipo;
-  if(!ans.cotacao.posicao) ans.cotacao.posicao=def.posicao;
-  if((ans.cotacao.qtd===undefined || ans.cotacao.qtd===null || ans.cotacao.qtd==='') && ans.acao==='trocar') ans.cotacao.qtd=1;
-  return ans.cotacao;
-}
-function renderQuotePanel(it,ans){
-  if(!cotacaoPrecisa(ans.acao)) return '';
-  const q={...cotacaoDefault(it,ans.acao), ...(ans.cotacao||{})};
-  const positions=['','Dianteiro esquerdo','Dianteiro direito','Traseiro esquerdo','Traseiro direito','Dianteiro','Traseiro','Esquerdo','Direito','Motorista','Passageiro','Conjunto/Kit'];
-  const tipos=['PEÇA','SERVIÇO','PEÇA + SERVIÇO','AVALIAR'];
-  return `<div class="quote-panel"><b>🧾 Peça/serviço para cotação</b><small>Confirme quantidade, peça exata e lado. O resumo agrupa automaticamente por peça para não ficar jogado.</small><div class="quote-grid"><div><label>Qtd.</label><input class="inp" data-quote-field="qtd" data-quote-item="${esc(it.id)}" type="number" min="0" step="1" value="${esc(q.qtd)}" placeholder="1"></div><div><label>Peça/serviço exato</label><input class="inp" data-quote-field="peca" data-quote-item="${esc(it.id)}" value="${esc(q.peca)}" placeholder="Ex: cubo com rolamento"></div><div><label>Posição/lado</label><select class="inp" data-quote-field="posicao" data-quote-item="${esc(it.id)}">${positions.map(p=>`<option value="${esc(p)}" ${String(q.posicao||'')===p?'selected':''}>${p||'Não informado'}</option>`).join('')}</select></div><div><label>Vai para</label><select class="inp" data-quote-field="tipo" data-quote-item="${esc(it.id)}">${tipos.map(t=>`<option value="${esc(t)}" ${String(q.tipo||'')===t?'selected':''}>${t}</option>`).join('')}</select></div></div></div>`;
-}
-function updateQuoteField(itemId,field,value){ const q=ensureCotacao(itemId); q[field]=value; saveDraft(); renderProgress(); }
-
 function renderItem(sec,it){
   const ans=state.answers[it.id]||{};
   const photos=state.itemPhotos[it.id]||[];
@@ -452,7 +462,7 @@ function renderItem(sec,it){
   return `<div class="item ${ans.acao?'has-action':''}" data-item-box="${esc(it.id)}">
     <div class="item-top"><div><div class="item-title">${esc(it.titulo)}</div>${it.hint?`<div class="item-hint">${esc(it.hint)}</div>`:''}<div class="badges">${req}${crit}</div></div><span class="pill ${actionInfo(ans.acao).classe||''}">${ans.acao?esc(actionInfo(ans.acao).emoji+' '+actionInfo(ans.acao).label):'Pendente'}</span></div>
     <div class="action-chips">${(it.acoes||['ok','atencao','trocar','na']).map(a=>{const ai=actionInfo(a); return `<button class="chip ${esc(ai.classe)} ${ans.acao===a?'on':''}" data-action="${esc(a)}" data-item="${esc(it.id)}" type="button">${esc(ai.emoji)} ${esc(ai.label)}</button>`}).join('')}</div>
-    <div class="item-extra">${renderQuotePanel(it,ans)}<textarea data-obs="${esc(it.id)}" placeholder="Observação rápida deste item...">${esc(ans.obs||'')}</textarea><div class="micro-actions"><button class="btn secondary small" data-dictate="${esc(it.id)}" type="button">🗣️ Ditar</button><label class="btn secondary small">📷 Câmera<input data-photo-item="${esc(it.id)}" type="file" accept="image/*" capture="environment" multiple hidden></label><label class="btn secondary small">🖼️ Galeria<input data-photo-item-gallery="${esc(it.id)}" type="file" accept="image/*" multiple hidden></label></div>${photos.length?`<div class="photos">${photos.map(p=>`<img src="${esc(p)}" alt="foto">`).join('')}</div>`:''}</div>
+    <div class="item-extra"><textarea data-obs="${esc(it.id)}" placeholder="Observação rápida deste item...">${esc(ans.obs||'')}</textarea><div class="micro-actions"><button class="btn secondary small" data-dictate="${esc(it.id)}" type="button">🗣️ Ditar obs.</button><button class="btn secondary small" data-photo-choice="${esc(it.id)}" type="button">📎 Imagem</button></div>${photos.length?`<div class="photos">${photos.map(p=>`<img src="${esc(p)}" alt="foto">`).join('')}</div>`:''}</div>
   </div>`;
 }
 function ensureAnswer(itemId){
@@ -461,7 +471,7 @@ function ensureAnswer(itemId){
 }
 function setAction(itemId,action){
   const im=itemMap()[itemId]||{}; const ans=ensureAnswer(itemId);
-  ans.item=im.titulo||itemId; ans.secao=im.secaoTitulo||''; ans.secaoId=im.secaoId||''; ans.acao=action; ans.acaoLabel=actionInfo(action).label; ans.updatedAt=nowISO(); ans.updatedBy=state.session?.name||''; if(cotacaoPrecisa(action)) ans.cotacao={...cotacaoDefault(im,action), ...(ans.cotacao||{})};
+  ans.item=im.titulo||itemId; ans.secao=im.secaoTitulo||''; ans.secaoId=im.secaoId||''; ans.acao=action; ans.acaoLabel=actionInfo(action).label; ans.updatedAt=nowISO(); ans.updatedBy=state.session?.name||'';
   saveDraft();
   const sec=(state.model.secoes||[]).find(s=>s.id===im.secaoId);
   const completedAfter = sec ? sectionStats(sec).complete : false;
@@ -529,7 +539,14 @@ function allPhotoEntries(data){
 async function imageForPdf(src){
   if(!src) return null;
   if(isDataUrl(src)) return src;
-  try{ const res=await fetch(src,{mode:'cors'}); const blob=await res.blob(); return await new Promise(ok=>{ const r=new FileReader(); r.onload=()=>ok(r.result); r.onerror=()=>ok(null); r.readAsDataURL(blob); }); }catch(e){ return null; }
+  try{ const res=await fetch(src,{mode:'cors'}); const blob=await res.blob(); return await new Promise(ok=>{ const r=new FileReader(); r.onload=()=>ok(r.result); r.onerror=()=>ok(null); r.readAsDataURL(blob); }); }catch(e){}
+  try{
+    return await new Promise(ok=>{
+      const img=new Image(); img.crossOrigin='anonymous';
+      img.onload=()=>{ try{ const c=document.createElement('canvas'); const max=900; const ratio=Math.min(max/img.width,max/img.height,1); c.width=Math.max(1,Math.round(img.width*ratio)); c.height=Math.max(1,Math.round(img.height*ratio)); const ctx=c.getContext('2d'); ctx.drawImage(img,0,0,c.width,c.height); ok(c.toDataURL('image/jpeg',0.82)); }catch(_){ ok(null); } };
+      img.onerror=()=>ok(null); img.src=src;
+    });
+  }catch(e){ return null; }
 }
 
 function payloadBase(){
@@ -540,7 +557,7 @@ function payloadBase(){
   const itens=Object.values(state.answers).map(a=>{ const fotos=state.itemPhotos[a.id]||[]; return {...a, fotos:fotos.length, fotoUrls:fotos, fotosUrls:fotos, criticidade:allItems[a.id]?.criticidade||'normal', obrigatorio:allItems[a.id]?.obrigatorio!==false}; });
   const osSel=state.osSelecionada||{}; const osRef=($('osRef')?.value||'').trim();
   const fotoUrls=[...(state.generalPhotos||[])]; const itemFotos=JSON.parse(JSON.stringify(state.itemPhotos||{}));
-  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15-17', versao:'v15.17', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef, osId:osSel.id||'', osColecao:osSel._col||'', osNumero:osSel.numero||osSel.codigo||osSel.osRef||osRef, osLabel:osSel.label||osRef, osStatus:osSel.status||osSel.etapa||'', osCliente:osSel.clienteNome||osSel.nomeCliente||osSel.cliente?.nome||'', osVeiculo:osSel.veiculoLabel||osSel.veiculoModelo||osSel.veiculo||osSel.veiculoSnapshot?.modelo||'', km:($('km')?.value||'').trim(), responsavel:tecnico, tecnicoChecklist:tecnico, tecnicoNome:tecnico, responsavelLogin:state.session?.name||'', responsavelPerfil:state.session?.role||'', verificadorEntrega:verificador, relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:fotoUrls.length, fotoUrls, fotosGeraisUrls:fotoUrls, itemPhotos:itemFotos, itemFotos, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
+  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15-18', versao:'v15.18', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef, osId:osSel.id||'', osColecao:osSel._col||'', osNumero:osSel.numero||osSel.codigo||osSel.osRef||osRef, osLabel:osSel.label||osRef, osStatus:osSel.status||osSel.etapa||'', osCliente:osSel.clienteNome||osSel.nomeCliente||osSel.cliente?.nome||'', osVeiculo:osSel.veiculoLabel||osSel.veiculoModelo||osSel.veiculo||osSel.veiculoSnapshot?.modelo||'', km:($('km')?.value||'').trim(), responsavel:tecnico, tecnicoChecklist:tecnico, tecnicoNome:tecnico, responsavelLogin:state.session?.name||'', responsavelPerfil:state.session?.role||'', verificadorEntrega:verificador, relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:fotoUrls.length, fotoUrls, fotosGeraisUrls:fotoUrls, itemPhotos:itemFotos, itemFotos, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
 }
 async function saveChecklist(){
   if(!placaNorm($('placa')?.value||'')) { toast('Informe a placa antes de salvar.'); go('screenInicio'); return null; }
@@ -565,77 +582,14 @@ async function saveChecklist(){
   finally{ setBusy('btnSalvar',false); }
 }
 
-
-function pecaKey(v){ return norm(v||'').replace(/\b(ld|le|de|dd|te|td|dianteiro|dianteira|traseiro|traseira|esquerdo|esquerda|direito|direita|motorista|passageiro)\b/g,'').replace(/\s+/g,' ').trim(); }
-function posShort(p){
-  const n=norm(p||'');
-  if(n.includes('dianteiro esquerdo')) return 'DE';
-  if(n.includes('dianteiro direito')) return 'DD';
-  if(n.includes('traseiro esquerdo')) return 'TE';
-  if(n.includes('traseiro direito')) return 'TD';
-  if(n.includes('dianteiro')) return 'Dianteiro';
-  if(n.includes('traseiro')) return 'Traseiro';
-  if(n.includes('esquerdo')) return 'Esq.';
-  if(n.includes('direito')) return 'Dir.';
-  if(n.includes('motorista')) return 'Motorista';
-  if(n.includes('passageiro')) return 'Passageiro';
-  if(n.includes('conjunto')) return 'Kit';
-  return String(p||'Não informado');
-}
-function rowsPecasAgrupadas(base){
-  const groups=new Map();
-  rowsCotacaoPecas(base).forEach(r=>{
-    const peca=String(r.PecaSolicitada||r.Componente||'Peça não informada').trim();
-    const sistema=String(r.Sistema||'Geral').trim();
-    const key=pecaKey(peca)+'|'+norm(sistema);
-    if(!groups.has(key)) groups.set(key,{QuantidadeTotal:0,Peca:peca,Sistema:sistema,Posicoes:[],Acoes:new Set(),Observacoes:[],Fotos:0,LinksFotos:[],Itens:[]});
-    const g=groups.get(key);
-    const qtd=Number(r.Quantidade)||1; g.QuantidadeTotal+=qtd;
-    const pos=posShort(r.Posicao||''); if(pos && !g.Posicoes.includes(pos)) g.Posicoes.push(pos);
-    if(r.Acao) g.Acoes.add(r.Acao);
-    if(r.Motivo) g.Observacoes.push(`${pos && pos!=='Não informado'?pos+': ':''}${r.Motivo}`);
-    g.Fotos += Number(r.Fotos)||0;
-    String(r.LinksFotos||'').split(' | ').filter(Boolean).forEach(u=>{ if(!g.LinksFotos.includes(u)) g.LinksFotos.push(u); });
-    g.Itens.push(r);
-  });
-  return Array.from(groups.values()).map(g=>({
-    QuantidadeTotal:g.QuantidadeTotal,
-    Peca:g.Peca,
-    Sistema:g.Sistema,
-    Posicoes:g.Posicoes.join(', ') || 'Não informado',
-    Acoes:Array.from(g.Acoes).join(', '),
-    Observacoes:g.Observacoes.join(' | '),
-    Fotos:g.Fotos,
-    LinksFotos:g.LinksFotos.join(' | '),
-    Detalhes:g.Itens.map(r=>`${r.Quantidade||1}x ${posShort(r.Posicao||'')} ${r.Componente||r.PecaSolicitada||''}`.trim()).join(' ; ')
-  })).sort((a,b)=>String(a.Sistema).localeCompare(String(b.Sistema),'pt-BR') || String(a.Peca).localeCompare(String(b.Peca),'pt-BR'));
-}
-function fotosDeRows(rows){
-  const urls=[]; (rows||[]).forEach(r=>String(r.LinksFotos||'').split(' | ').filter(Boolean).forEach(u=>{ if(!urls.includes(u)) urls.push(u); })); return urls;
-}
-
-function resumoCotacao(base=payloadBase()){
-  const pecas=rowsCotacaoPecas(base);
-  const pecasAgrupadas=rowsPecasAgrupadas(base);
-  const servicos=rowsServicos(base);
-  const avaliar=(base.itens||[]).filter(i=>['atencao','revisar'].includes(i.acao));
-  const qtdPecas=pecasAgrupadas.reduce((s,r)=>s+(Number(r.QuantidadeTotal)||0),0);
-  return {pecas, pecasAgrupadas, servicos, avaliar, qtdPecas, tiposPecas:pecasAgrupadas.length};
-}
 function renderResumo(){
   const box=$('resumoLista'); if(!box) return;
-  const base=payloadBase();
-  const crit=base.itens.filter(i=>ACTIONS_FINAL.has(i.acao));
-  const res=resumoCotacao(base);
-  $('resumoPill').textContent = state.lastSavedId ? `Editando ${state.lastSavedId}` : `${res.qtdPecas} peça(s) / ${res.servicos.length} serviço(s)`;
+  const base=payloadBase(); const q=buildQuoteData(base); const crit=base.itens.filter(i=>ACTIONS_FINAL.has(i.acao));
+  $('resumoPill').textContent = state.lastSavedId ? `Editando ${state.lastSavedId}` : `${q.pecas.length} peças • ${q.servicos.length} serviços`;
   if($('btnSalvar')) $('btnSalvar').textContent = state.lastSavedId ? '💾 Salvar alterações' : '✅ Salvar checklist';
   if($('btnExcluirAtual')) $('btnExcluirAtual').disabled = !state.lastSavedId || !isGestor();
-  const modoEdicao = state.lastSavedId?`<div class="notice warn"><b>Modo edição:</b> este checklist já foi salvo. Se alterar e tocar em “Salvar alterações”, o registro ${esc(state.lastSavedId)} será atualizado.</div>`:'';
-  const kpis = `<div class="quote-summary"><div class="quote-card"><b>${res.qtdPecas}</b><span>peça(s) para cotar/comprar</span></div><div class="quote-card"><b>${res.tiposPecas}</b><span>tipo(s) de peça</span></div><div class="quote-card"><b>${res.servicos.length}</b><span>serviço(s)/conserto(s)</span></div><div class="quote-card"><b>${res.avaliar.length}</b><span>itens para avaliar</span></div></div>`;
-  const pecasHtml = res.pecasAgrupadas.length ? res.pecasAgrupadas.map(g=>`<div class="quote-group"><div class="quote-group-head"><div><div class="quote-group-title">${esc(g.QuantidadeTotal)}x ${esc(g.Peca)}</div><small>${esc(g.Sistema)} • Posições: ${esc(g.Posicoes)}</small></div><span class="pill bad">${esc(g.Acoes||'Trocar')}</span></div>${g.Observacoes?`<small>Obs.: ${esc(g.Observacoes)}</small>`:''}${g.Detalhes?`<details><summary>Ver detalhes (${g.Itens.length})</summary><small>${esc(g.Detalhes)}</small></details>`:''}${g.Fotos?`<small>📷 ${esc(g.Fotos)} foto(s) vinculada(s)</small>`:''}</div>`).join('') : '<div class="notice">Nenhuma peça para compra/cotação. Itens OK e N/A não entram aqui.</div>';
-  const servHtml = res.servicos.length ? res.servicos.map(r=>`<div class="res-line quote-line"><b>${esc(r.ServicoOuComponente)}</b><span class="pill warn">${esc(r.Acao)}</span><small>${esc(r.Sistema)}${r.Posicao?' • '+esc(r.Posicao):''}${r.ObservacaoTecnica?' • Obs.: '+esc(r.ObservacaoTecnica):''}</small></div>`).join('') : '<div class="notice">Nenhum serviço/conserto separado.</div>';
-  const tecnicoHtml = crit.length ? `<details class="tech-details"><summary>Ver lista técnica completa (${crit.length})</summary>${crit.map(i=>`<div class="res-line"><b>${esc(i.secao)} • ${esc(i.item)}</b><span class="pill ${esc(actionInfo(i.acao).classe)}">${esc(actionInfo(i.acao).emoji)} ${esc(i.acaoLabel)}</span>${i.obs?`<small>${esc(i.obs)}</small>`:''}</div>`).join('')}</details>` : '<div class="notice">Nenhum item crítico. Se necessário, gere PDF mesmo assim para registrar a avaliação.</div>';
-  box.innerHTML = modoEdicao + `<div class="notice"><b>Resumo fácil para orçamento:</b> veja primeiro quantas peças comprar, quais posições/lados e quais serviços executar. O relatório técnico completo fica separado.</div>` + kpis + `<h3 class="mini-title">🧾 Peças para cotação / compra</h3>${pecasHtml}<h3 class="mini-title">🔧 Serviços / consertos</h3>${servHtml}<h3 class="mini-title">📋 Registro técnico</h3>${tecnicoHtml}`;
+  const top=`${state.lastSavedId?`<div class="notice warn"><b>Modo edição:</b> este checklist já foi salvo. Se alterar e tocar em “Salvar alterações”, o registro ${esc(state.lastSavedId)} será atualizado.</div>`:''}<div class="quote-panel"><div class="quote-head"><div class="quote-card"><b>${q.totalPecas}</b><span>peças estimadas</span></div><div class="quote-card"><b>${q.pecas.length}</b><span>grupos de peça</span></div><div class="quote-card"><b>${q.servicos.length}</b><span>serviços/consertos</span></div><div class="quote-card"><b>${q.avaliar.length}</b><span>avaliar/aprovar</span></div></div><div class="notice"><b>Resumo inteligente:</b> as peças iguais são agrupadas por quantidade e posição. Os serviços ficam juntos. O laudo técnico completo continua disponível separado.</div></div>`;
+  box.innerHTML = top + renderQuoteGroup('🧾 Peças para cotar/comprar — agrupadas', q.pecas, 'Nenhuma peça para cotar.') + renderQuoteGroup('🛠️ Serviços/consertos — agrupados', q.servicos, 'Nenhum serviço separado.') + renderQuoteGroup('🔎 Itens para avaliar/aprovar', q.avaliar, 'Nada pendente de avaliação.') + `<div class="quote-group"><h3>📋 Lista técnica completa (${crit.length} itens)</h3>${crit.slice(0,18).map(i=>`<div class="res-line"><b>${esc(i.secao)} • ${esc(i.item)}</b><span class="pill ${esc(actionInfo(i.acao).classe)}">${esc(actionInfo(i.acao).emoji)} ${esc(i.acaoLabel)}</span>${i.obs?`<small>${esc(i.obs)}</small>`:''}</div>`).join('')}${crit.length>18?`<div class="notice">Mais ${crit.length-18} item(ns) técnicos estão no PDF técnico completo e na planilha detalhada.</div>`:''}</div>`;
 }
 
 
@@ -794,7 +748,7 @@ function entregaPayloadBase(){
   const base=payloadBase();
   const itens=getCriticalItems().map(i=>({checklistItemId:i.id, item:i.item, secao:i.secao, acao:i.acao, acaoLabel:i.acaoLabel, diagnosticoObs:i.obs, fotos:i.fotos||0, fotoUrls:i.fotoUrls||[], entrega:state.delivery[i.id]||{status:'pendente'}}));
   const dataEntrega=($('entregaData')?.value||'').trim();
-  return {id:uid(), checklistId:state.lastSavedId||base.id, tenantId:base.tenantId, oficinaNome:base.oficinaNome, placa:base.placa, osRef:base.osRef, osId:base.osId, osColecao:base.osColecao, osNumero:base.osNumero, osLabel:base.osLabel, km:base.km, tecnicoChecklist:base.tecnicoChecklist||base.responsavel, responsavel:base.responsavel, conferente:($('conferente')?.value||$('verificadorEntrega')?.value||state.session?.name||'').trim(), verificadorEntrega:($('verificadorEntrega')?.value||$('conferente')?.value||state.session?.name||'').trim(), entreguePor:($('entregaEntreguePor')?.value||'').trim(), recebidoPor:($('entregaRecebidoPor')?.value||'').trim(), documentoRecebedor:($('entregaDoc')?.value||'').trim(), dataEntrega:dataEntrega||nowISO(), perfil:state.session?.role||'', status:$('entregaStatus')?.value||'em_conferencia', observacaoFinal:$('entregaObs')?.value||'', itens, fotoUrls:base.fotoUrls||[], fotosGeraisUrls:base.fotoUrls||[], itemPhotos:base.itemPhotos||{}, itemFotos:base.itemFotos||{}, criadoEm:nowISO(), atualizadoEm:nowISO(), app:'OFICIN-IA-CHECKLIST-V15-17', versao:'v15.17', registroEntrega:true};
+  return {id:uid(), checklistId:state.lastSavedId||base.id, tenantId:base.tenantId, oficinaNome:base.oficinaNome, placa:base.placa, osRef:base.osRef, osId:base.osId, osColecao:base.osColecao, osNumero:base.osNumero, osLabel:base.osLabel, km:base.km, tecnicoChecklist:base.tecnicoChecklist||base.responsavel, responsavel:base.responsavel, conferente:($('conferente')?.value||$('verificadorEntrega')?.value||state.session?.name||'').trim(), verificadorEntrega:($('verificadorEntrega')?.value||$('conferente')?.value||state.session?.name||'').trim(), entreguePor:($('entregaEntreguePor')?.value||'').trim(), recebidoPor:($('entregaRecebidoPor')?.value||'').trim(), documentoRecebedor:($('entregaDoc')?.value||'').trim(), dataEntrega:dataEntrega||nowISO(), perfil:state.session?.role||'', status:$('entregaStatus')?.value||'em_conferencia', observacaoFinal:$('entregaObs')?.value||'', itens, fotoUrls:base.fotoUrls||[], fotosGeraisUrls:base.fotoUrls||[], itemPhotos:base.itemPhotos||{}, itemFotos:base.itemFotos||{}, criadoEm:nowISO(), atualizadoEm:nowISO(), app:'OFICIN-IA-CHECKLIST-V15-18', versao:'v15.18', registroEntrega:true};
 }
 async function saveEntrega(){
   setBusy('btnSalvarEntrega',true,'Salvando entrega...');
@@ -858,6 +812,66 @@ function pdfStatusBadge(doc,acao,x,y){
   doc.setFillColor(c[0],c[1],c[2]); doc.roundedRect(x,y-4.4,16,6.4,2,2,'F');
   doc.setFont('helvetica','bold'); doc.setFontSize(6.5); doc.setTextColor(255,255,255); doc.text(label,x+8,y-.1,{align:'center'});
 }
+
+function pdfSmallLine(doc,text,x,y,w,lh=3.6){ const lines=doc.splitTextToSize(String(text||''),w); doc.text(lines,x,y); return y+lines.length*lh; }
+function drawCompactHeader(doc,title,data){
+  doc.setFillColor(15,23,42); doc.rect(0,0,210,24,'F');
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.text(title,10,11);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.text(`Placa: ${data.placa||'-'} • O.S.: ${data.osRef||data.osNumero||'-'} • KM: ${data.km||'-'} • Técnico: ${data.tecnicoChecklist||data.responsavel||'-'}`,10,18);
+}
+function drawGroupTable(doc,title,groups,y,mode='peca'){
+  if(y>260){ doc.addPage(); drawCompactHeader(doc,'RESUMO PARA COTAÇÃO / ORÇAMENTO',payloadBase()); y=32; }
+  doc.setFillColor(239,246,255); doc.setDrawColor(191,219,254); doc.roundedRect(8,y-5,194,7,2,2,'FD');
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(15,23,42); doc.text(title,11,y); y+=5;
+  if(!groups.length){ doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.text('Nenhum item.',11,y); return y+5; }
+  doc.setFontSize(6.8); doc.setFont('helvetica','bold'); doc.setTextColor(71,85,105);
+  doc.text('QTD',10,y); doc.text(mode==='peca'?'PEÇA AGRUPADA':'SERVIÇO AGRUPADO',24,y); doc.text('POS.',95,y); doc.text('OBS./DETALHES',122,y); y+=3;
+  doc.setDrawColor(226,232,240); doc.line(8,y,202,y); y+=3;
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(15,23,42);
+  for(const g of groups){
+    const obs=compactObs(g.itens,130); const det=groupDetails(g).slice(0,130); const h=Math.max(8, Math.ceil((String(g.nome).length+String(obs||det).length)/80)*3.5+5);
+    if(y+h>276){ doc.addPage(); drawCompactHeader(doc,'RESUMO PARA COTAÇÃO / ORÇAMENTO',payloadBase()); y=32; }
+    doc.setFont('helvetica','bold'); doc.text(String(g.qtd)+'x',10,y); doc.text(String(g.nome).slice(0,42),24,y); doc.setFont('helvetica','normal'); doc.text((g.posicoes.length?g.posicoes.join(', '):'confirmar').slice(0,18),95,y);
+    y=pdfSmallLine(doc, obs || det || '-',122,y,78,3.3);
+    doc.setDrawColor(235,239,245); doc.line(8,y+1,202,y+1); y+=4;
+  }
+  return y+2;
+}
+async function drawPhotoStrip(doc,photos,y){
+  const list=(photos||[]).slice(0,8);
+  if(!list.length) return y;
+  if(y+34>276){ doc.addPage(); drawCompactHeader(doc,'RESUMO PARA COTAÇÃO / ORÇAMENTO',payloadBase()); y=32; }
+  doc.setFillColor(248,250,252); doc.setDrawColor(226,232,240); doc.roundedRect(8,y-5,194,7,2,2,'FD');
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(15,23,42); doc.text(`Miniaturas (${list.length})`,11,y); y+=5;
+  let x=10; const yy=y;
+  for(const ph of list){
+    const img=await imageForPdf(ph.url);
+    doc.setDrawColor(226,232,240); doc.roundedRect(x,yy,22,20,2,2,'S');
+    if(img){ try{ doc.addImage(img,'JPEG',x+1,yy+1,20,14,undefined,'FAST'); }catch(e){ try{ doc.addImage(img,'PNG',x+1,yy+1,20,14,undefined,'FAST'); }catch(_){} } }
+    doc.setFont('helvetica','normal'); doc.setFontSize(5.6); doc.setTextColor(100,116,139); doc.text(String(ph.label||'Foto').slice(0,13),x+1,yy+18);
+    x+=24;
+  }
+  return y+24;
+}
+async function gerarPDFCotacao(){
+  const data=payloadBase(); const jsPDF=window.jspdf?.jsPDF; if(!jsPDF){ toast('Biblioteca PDF não carregou.'); return; }
+  const doc=new jsPDF({unit:'mm',format:'a4'}); const q=buildQuoteData(data); let y=32;
+  drawCompactHeader(doc,'RESUMO PARA COTAÇÃO / ORÇAMENTO',data);
+  doc.setFillColor(248,250,252); doc.setDrawColor(226,232,240); doc.roundedRect(8,y-4,194,18,3,3,'FD');
+  const cards=[['Peças',q.totalPecas],['Grupos peça',q.pecas.length],['Serviços',q.servicos.length],['Avaliar',q.avaliar.length]];
+  cards.forEach((c,i)=>{ const x=13+i*47; doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(15,23,42); doc.text(String(c[1]),x,y+4); doc.setFontSize(6.8); doc.setTextColor(100,116,139); doc.text(c[0],x,y+10); });
+  y+=22;
+  y=drawGroupTable(doc,'PEÇAS PARA COTAR / COMPRAR',q.pecas,y,'peca');
+  y=drawGroupTable(doc,'SERVIÇOS / CONSERTOS',q.servicos,y,'servico');
+  y=drawGroupTable(doc,'ITENS PARA AVALIAR / APROVAR',q.avaliar,y,'avaliar');
+  y=await drawPhotoStrip(doc,allPhotoEntries(data),y+2);
+  if(y+22>276){ doc.addPage(); drawCompactHeader(doc,'RESUMO PARA COTAÇÃO / ORÇAMENTO',data); y=36; }
+  doc.setDrawColor(100,116,139); doc.line(14,y+10,72,y+10); doc.line(80,y+10,138,y+10); doc.line(146,y+10,202,y+10);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(100,116,139); doc.text('Responsável técnico',43,y+14,{align:'center'}); doc.text('Aprovação cliente',109,y+14,{align:'center'}); doc.text('Gestor / orçamento',174,y+14,{align:'center'});
+  const total=doc.internal.getNumberOfPages(); for(let i=1;i<=total;i++){ doc.setPage(i); pdfFooter(doc); }
+  doc.save(`cotacao_${data.placa||'veiculo'}_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+
 async function gerarPDF(source){
   const data=source||payloadBase(); const jsPDF=window.jspdf?.jsPDF; if(!jsPDF){ toast('Biblioteca PDF não carregou.'); return; }
   const doc=new jsPDF({unit:'mm',format:'a4'}); let y=0;
@@ -925,102 +939,23 @@ async function gerarPDF(source){
 }
 
 function gerarPDFEntrega(){ gerarPDF(entregaPayloadBase()); }
-
-function inferPosicao(item){
-  const t=norm(item?.item||item?.titulo||'');
-  if(t.includes('dianteir') && t.includes('esquerd')) return 'Dianteiro esquerdo';
-  if(t.includes('dianteir') && t.includes('direit')) return 'Dianteiro direito';
-  if(t.includes('traseir') && t.includes('esquerd')) return 'Traseiro esquerdo';
-  if(t.includes('traseir') && t.includes('direit')) return 'Traseiro direito';
-  if(t.includes('dianteir')) return 'Dianteiro';
-  if(t.includes('traseir')) return 'Traseiro';
-  if(t.includes('esquerd')) return 'Esquerdo';
-  if(t.includes('direit')) return 'Direito';
-  if(t.includes('motorista')) return 'Motorista';
-  if(t.includes('passageiro')) return 'Passageiro';
-  if(t.includes('porta malas')||t.includes('tampa traseira')) return 'Traseira/porta-malas';
-  return '';
-}
-function tipoOrcamentoPorAcao(acao){
-  if(acao==='trocar') return 'PEÇA';
-  if(['retificar','regular','ajustar','lubrificar','limpar'].includes(acao)) return 'SERVIÇO';
-  if(['revisar','atencao'].includes(acao)) return 'AVALIAR';
-  return '';
-}
-function isAcaoOrcavel(acao){ return !!tipoOrcamentoPorAcao(acao); }
-function qVal(i,k,def=''){ return (i.cotacao&&i.cotacao[k]!==undefined&&i.cotacao[k]!==null&&i.cotacao[k]!=='') ? i.cotacao[k] : def; }
-function itemTipoCotacao(i){ return qVal(i,'tipo', tipoCotacaoPadrao(i.acao,{titulo:i.item})); }
-function itemQuantidade(i){ const q=Number(qVal(i,'qtd', i.acao==='trocar'?1:0)); return Number.isFinite(q)&&q>0?q:''; }
-function itemPecaSolicitada(i){ return qVal(i,'peca', pecaSolicitadaPadrao({titulo:i.item},i.acao)); }
-function itemPosicaoCotacao(i){ return qVal(i,'posicao', inferPosicao(i)); }
-function rowsCotacaoPecas(base){
-  return (base.itens||[]).filter(i=>{
-    const tipo=itemTipoCotacao(i);
-    return i.acao && i.acao!=='ok' && i.acao!=='na' && (tipo==='PEÇA'||tipo==='PEÇA + SERVIÇO'||i.acao==='trocar');
-  }).map(i=>({
-    Quantidade:itemQuantidade(i)||1, PecaSolicitada:itemPecaSolicitada(i), Posicao:itemPosicaoCotacao(i), Sistema:i.secao||'', Componente:i.item||'', Acao:i.acaoLabel||i.acao,
-    Motivo:i.obs||'', Criticidade:i.criticidade||'', Fotos:i.fotos||0, LinksFotos:(i.fotoUrls||[]).join(' | '), Fornecedor:qVal(i,'fornecedor',''), Marca:qVal(i,'marca',''), Codigo:qVal(i,'codigo',''), ValorUnitario:qVal(i,'valor',''), Disponibilidade:'', Aprovado:'', ObservacaoCompras:''
-  }));
-}
-function rowsServicos(base){
-  return (base.itens||[]).filter(i=>{
-    const tipo=itemTipoCotacao(i);
-    return i.acao && i.acao!=='ok' && i.acao!=='na' && (tipo==='SERVIÇO'||tipo==='PEÇA + SERVIÇO'||['retificar','regular','ajustar','lubrificar','limpar'].includes(i.acao));
-  }).map(i=>({
-    Sistema:i.secao||'', ServicoOuComponente:itemPecaSolicitada(i)||i.item||'', Posicao:itemPosicaoCotacao(i), Acao:i.acaoLabel||i.acao,
-    Tipo:itemTipoCotacao(i), Prioridade:i.criticidade==='critico'?'Alta':(i.criticidade==='importante'?'Média':'Normal'),
-    ObservacaoTecnica:i.obs||'', MaoDeObra:'', ValorMaoDeObra:'', Status:'Aguardando orçamento', Aprovado:''
-  }));
-}
-function rowsOrcamentoCliente(base){
-  return (base.itens||[]).filter(i=>isAcaoOrcavel(i.acao)).map(i=>({
-    Grupo: itemTipoCotacao(i)==='PEÇA' ? 'Peça necessária' : (itemTipoCotacao(i)==='SERVIÇO' ? 'Serviço necessário' : (itemTipoCotacao(i)==='PEÇA + SERVIÇO'?'Peça + serviço':'Recomendado / avaliar')),
-    Quantidade:itemQuantidade(i)||'', Item:itemPecaSolicitada(i)||i.item||'', Sistema:i.secao||'', Acao:i.acaoLabel||i.acao, Posicao:itemPosicaoCotacao(i),
-    Explicacao:i.obs||'', Prioridade:i.criticidade==='critico'?'Crítico':(i.criticidade==='importante'?'Importante':'Normal'), ValorPecas:'', ValorServico:'', Total:'', AprovadoCliente:''
-  }));
-}
-async function gerarPDFOrcamento(){
-  const data=payloadBase(); const jsPDF=window.jspdf?.jsPDF; if(!jsPDF){ toast('Biblioteca PDF não carregou.'); return; }
-  const pecasDetalhe=rowsCotacaoPecas(data); const pecas=rowsPecasAgrupadas(data); const servs=rowsServicos(data); const qtd=pecas.reduce((s,r)=>s+(Number(r.QuantidadeTotal)||0),0);
-  const doc=new jsPDF({unit:'mm',format:'a4'}); let y=0;
-  doc.setFillColor(15,23,42); doc.rect(0,0,210,30,'F');
-  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.text('RESUMO PARA COTAÇÃO E ORÇAMENTO',12,13);
-  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.text('Peças agrupadas por compra + posições/lados + serviços/consertos para aprovação',12,21);
-  y=38; doc.setTextColor(15,23,42); doc.setFont('helvetica','bold'); doc.setFontSize(9);
-  doc.text(`Placa: ${data.placa||'-'}   O.S.: ${data.osRef||data.osNumero||'-'}   KM: ${data.km||'-'}   Técnico: ${data.tecnicoChecklist||data.responsavel||'-'}`.slice(0,118),12,y); y+=8;
-  const cards=[['PEÇAS',`${qtd} un. / ${pecas.length} tipo(s)`],['SERVIÇOS',`${servs.length}`],['ATENÇÃO/REVISAR',`${(data.itens||[]).filter(i=>['atencao','revisar'].includes(i.acao)).length}`]];
-  cards.forEach((c,i)=>{ const x=12+i*62; doc.setFillColor(248,250,252); doc.setDrawColor(226,232,240); doc.roundedRect(x,y,56,17,2,2,'FD'); doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(15,23,42); doc.text(c[1],x+4,y+7); doc.setFontSize(6.8); doc.setTextColor(100,116,139); doc.text(c[0],x+4,y+13); }); y+=25;
-  const tableHeader=(titulo)=>{ y=pdfSectionHeader(doc,titulo,y+2); doc.setFont('helvetica','bold'); doc.setFontSize(7.2); doc.setTextColor(71,85,105); doc.text('QTD',12,y); doc.text('PEÇA / SERVIÇO',25,y); doc.text('POSIÇÕES',94,y); doc.text('AÇÃO',128,y); doc.text('OBS./FOTOS',154,y); y+=4; doc.setDrawColor(203,213,225); doc.line(12,y,198,y); y+=3; };
-  tableHeader('1. Peças para cotar/comprar');
-  if(!pecas.length){ doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.text('Nenhuma peça para cotação.',12,y); y+=8; }
-  for(const r of pecas){ y=pdfEnsurePage(doc,y+11); doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(15,23,42); doc.text(String(r.QuantidadeTotal||1),12,y); doc.text(String(r.Peca||'').slice(0,35),25,y); doc.setFont('helvetica','normal'); doc.setFontSize(7.2); doc.setTextColor(51,65,85); doc.text(String(r.Posicoes||'-').slice(0,19),94,y); doc.text(String(r.Acoes||'-').slice(0,14),128,y); doc.text(String(r.Observacoes||r.Detalhes||'').slice(0,26),154,y); const urls=fotosDeRows([r]).slice(0,2); if(urls.length){ let xx=176; for(const u of urls){ const img=await imageForPdf(u); doc.setDrawColor(226,232,240); doc.roundedRect(xx,y-5,10,8,1,1,'S'); if(img){ try{ doc.addImage(img,'JPEG',xx+0.4,y-4.6,9.2,7.2,undefined,'FAST'); }catch(e){ try{ doc.addImage(img,'PNG',xx+0.4,y-4.6,9.2,7.2,undefined,'FAST'); }catch(_){} } } xx+=11; } } y+=6; if(r.Detalhes){ doc.setFontSize(6.6); doc.setTextColor(100,116,139); doc.text(String('Detalhes: '+r.Detalhes).slice(0,116),25,y); y+=4; } doc.setDrawColor(226,232,240); doc.line(12,y,198,y); }
-  tableHeader('2. Serviços / consertos');
-  if(!servs.length){ doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.text('Nenhum serviço separado.',12,y); y+=8; }
-  servs.forEach((r)=>{ y=pdfEnsurePage(doc,y+7); doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(15,23,42); doc.text('-',12,y); doc.text(String(r.ServicoOuComponente||'').slice(0,38),25,y); doc.setFont('helvetica','normal'); doc.setFontSize(7.2); doc.setTextColor(51,65,85); doc.text(String(r.Posicao||'-').slice(0,22),96,y); doc.text(String(r.Acao||'-').slice(0,16),135,y); doc.text(String(r.ObservacaoTecnica||'').slice(0,28),158,y); y+=6; doc.setDrawColor(226,232,240); doc.line(12,y,198,y); });
-  y=pdfEnsurePage(doc,y+12); doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.text('Assinaturas / aprovação',12,y); y+=16;
-  doc.setDrawColor(100,116,139); doc.line(12,y,70,y); doc.line(78,y,136,y); doc.line(144,y,198,y);
-  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(100,116,139); doc.text('Responsável técnico',41,y+4,{align:'center'}); doc.text('Gestor / orçamento',107,y+4,{align:'center'}); doc.text('Cliente / aprovação',171,y+4,{align:'center'});
-  const total=doc.internal.getNumberOfPages(); for(let i=1;i<=total;i++){ doc.setPage(i); pdfFooter(doc); }
-  doc.save(`orcamento_cotacao_${data.placa||'veiculo'}_${new Date().toISOString().slice(0,10)}.pdf`);
-}
-
 function gerarXLSX(kind='checklist'){
   if(!window.XLSX){ toast('Biblioteca XLSX não carregou.'); return; }
-  const base=payloadBase();
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{Placa:base.placa,OS:base.osRef,KM:base.km,Oficina:base.oficinaNome,Tecnico:base.tecnicoChecklist||base.responsavel,ConferenteEntrega:base.verificadorEntrega||'',FotosGerais:(base.fotoUrls||[]).length,Data:fmtDateTime(base.criadoEm),OK:base.stats.ok,Atencao:base.stats.atencao,Trocar:base.stats.trocar,AcoesTecnicas:base.stats.tecnicas,Pendentes:base.stats.pending}]),'Resumo');
-  const rc=resumoCotacao(base);
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{TotalQuantidadePecas:rc.qtdPecas,TiposDePecaAgrupados:rc.tiposPecas,LinhasDetalhadasDePecas:rc.pecas.length,ServicosConsertos:rc.servicos.length,ItensParaAvaliar:rc.avaliar.length,Observacao:'Use primeiro a aba Pecas_Agrupadas para comprar/cotar. A aba Pecas_Detalhadas mostra a origem técnica por item.'}]),'Resumo_Compra');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rowsPecasAgrupadas(base)),'Pecas_Agrupadas');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rowsCotacaoPecas(base)),'Pecas_Detalhadas');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rowsServicos(base)),'Servicos_Consertos');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rowsOrcamentoCliente(base)),'Orcamento_Cliente');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(base.itens.map(i=>({Secao:i.secao,Item:i.item,Posicao:inferPosicao(i),Acao:i.acaoLabel||i.acao,TipoOrcamento:tipoOrcamentoPorAcao(i.acao),Obs:i.obs||'',Obrigatorio:i.obrigatorio?'Sim':'Não',Criticidade:i.criticidade||'',Fotos:i.fotos||0,LinksFotos:(i.fotoUrls||[]).join(' | '),AtualizadoPor:i.updatedBy||''}))),'Itens_Tecnicos');
-  const entrega=getCriticalItems().map(i=>({Secao:i.secao,Item:i.item,Posicao:inferPosicao(i),AcaoTecnica:i.acaoLabel,StatusEntrega:state.delivery[i.id]?.status||'pendente',ObsEntrega:state.delivery[i.id]?.obs||'',Conferente:base.verificadorEntrega||'',EntreguePor:$('entregaEntreguePor')?.value||'',RecebidoPor:$('entregaRecebidoPor')?.value||'',DataEntrega:$('entregaData')?.value||''}));
+  const base=payloadBase(); const q=buildQuoteData(base); const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{Placa:base.placa,OS:base.osRef,KM:base.km,Oficina:base.oficinaNome,Tecnico:base.tecnicoChecklist||base.responsavel,ConferenteEntrega:base.verificadorEntrega||'',FotosGerais:(base.fotoUrls||[]).length,Data:fmtDateTime(base.criadoEm),PecasEstimadas:q.totalPecas,GruposDePecas:q.pecas.length,Servicos:q.servicos.length,Avaliar:q.avaliar.length,OK:base.stats.ok,Atencao:base.stats.atencao,Trocar:base.stats.trocar,AcoesTecnicas:base.stats.tecnicas,Pendentes:base.stats.pending}]),'Resumo_Executivo');
+  const sheetGroups=(arr)=>arr.map(g=>({Quantidade:g.qtd,ItemAgrupado:g.nome,Posicoes:g.posicoes.join(', ')||'confirmar',Acao:g.acaoLabel||'',Observacoes:compactObs(g.itens,250),Detalhes:groupDetails(g),Fotos:(g.fotos||[]).length,LinksFotos:(g.fotos||[]).join(' | '),Fornecedor:'',Marca:'',Codigo:'',ValorUnitario:'',Disponibilidade:'',Aprovado:''}));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sheetGroups(q.pecas)),'Pecas_Agrupadas');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sheetGroups(q.servicos)),'Servicos_Agrupados');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sheetGroups(q.avaliar)),'Avaliar_Aprovar');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(base.itens.map(i=>({Secao:i.secao,Item:i.item,Acao:i.acaoLabel||i.acao,ClasseCotacao:quoteKind(i),ItemAgrupado:quoteBaseName(i),Posicao:posicaoInfoFromText(i.item+' '+(i.obs||'')).map(p=>p.code).join(', '),Obs:i.obs||'',Obrigatorio:i.obrigatorio?'Sim':'Não',Criticidade:i.criticidade||'',Fotos:i.fotos||0,LinksFotos:(i.fotoUrls||[]).join(' | '),AtualizadoPor:i.updatedBy||''}))),'Itens_Detalhados');
+  const fotos=allPhotoEntries(base).map(f=>({Tipo:f.secao,Descricao:f.label,Link:f.url}));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(fotos),'Fotos');
+  const entrega=getCriticalItems().map(i=>({Secao:i.secao,Item:i.item,AcaoTecnica:i.acaoLabel,StatusEntrega:state.delivery[i.id]?.status||'pendente',ObsEntrega:state.delivery[i.id]?.obs||'',Conferente:base.verificadorEntrega||'',EntreguePor:$('entregaEntreguePor')?.value||'',RecebidoPor:$('entregaRecebidoPor')?.value||'',DataEntrega:$('entregaData')?.value||''}));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(entrega),'Entrega');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet((state.history.os||[]).map(o=>({OS:o.numero||o.codigo||o.id,Status:o.status||o.etapa||'',Cliente:o.clienteNome||o.cliente?.nome||'',Data:fmtDateTime(o.criadoEm||o.createdAt||o.data)}))),'Historico_OS');
   XLSX.writeFile(wb,`${kind}_${base.placa||'veiculo'}_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
+
 function gerarConsultaXLSX(){ if(!window.XLSX) return toast('Biblioteca XLSX não carregou.'); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(state.consulta.map(c=>({Placa:c.placa,OS:c.osRef,Responsavel:c.responsavel,Data:fmtDateTime(c.criadoEm),OK:c.stats?.ok||0,Atencao:c.stats?.atencao||0,Trocar:c.stats?.trocar||0}))), 'Consulta'); XLSX.writeFile(wb,'consulta_checklists.xlsx'); }
 function baixarJSON(){ const p=payloadBase(); downloadText(`checklist_${p.placa||'veiculo'}.json`,JSON.stringify(p,null,2)); }
 function splitIntoColumns(sections, totalCols=4){
@@ -1115,8 +1050,8 @@ function checklistResumoParaOS(data, entrega=false){
   return {
     id:data?.id||state.lastSavedId||uid(),
     tipo: entrega?'entrega':'tecnico',
-    app:data?.app||'OFICIN-IA-CHECKLIST-V15-15',
-    versao:data?.versao||'v15.15',
+    app:data?.app||'OFICIN-IA-CHECKLIST-V15-18',
+    versao:data?.versao||'v15.18',
     placa:data?.placa||placaNorm($('placa')?.value||''),
     osRef:data?.osRef||($('osRef')?.value||'').trim(),
     osId:data?.osId||state.osSelecionada?.id||'',
@@ -1183,6 +1118,21 @@ async function anexarOS(entrega=false){
   const data=entrega?entregaPayloadBase():payloadBase();
   const updated=await anexarPayloadNaOS(data,entrega,false);
   toast(updated?'Checklist anexado na O.S. do Jarvis. Abra a O.S. no SaaS para visualizar em Provas & Checklist.':'Não encontrei a O.S. pelo número informado. Checklist ficou salvo/exportável.');
+}
+
+
+function openPhotoChoice(itemId=null){
+  state.photoTarget = { itemId: itemId || null };
+  const title = itemId ? (itemMap()[itemId]?.titulo || 'Item') : 'Fotos gerais';
+  if($('fotoTitulo')) $('fotoTitulo').textContent = 'Adicionar imagem — ' + title;
+  $('modalFoto')?.classList.remove('hidden');
+}
+function closePhotoChoice(){ $('modalFoto')?.classList.add('hidden'); }
+function handleModalPhotoFiles(files){
+  const target=state.photoTarget||{};
+  if(target.itemId) addItemPhotos(target.itemId, files);
+  else addPhotosToArray(files,state.generalPhotos,()=>{ renderPhotos(); toast('Fotos gerais adicionadas.'); });
+  closePhotoChoice();
 }
 
 function addPhotosToArray(files, target, done){
@@ -1258,10 +1208,11 @@ function bind(){
   $('btnHistorico')?.addEventListener('click',buscarHistorico); $('btnHistoricoFinal')?.addEventListener('click',()=>{go('screenInicio'); buscarHistorico();});
   $('btnConsultar')?.addEventListener('click',consultar); $('btnRodarConsulta')?.addEventListener('click',consultar); $('btnFecharConsulta')?.addEventListener('click',()=>go('screenInicio')); $('btnVoltarInicioConsulta')?.addEventListener('click',()=>go('screenInicio')); $('btnExportConsulta')?.addEventListener('click',gerarConsultaXLSX);
   $('buscaItem')?.addEventListener('input',renderSections);
-  $('fotoGeral')?.addEventListener('change',e=>addPhotosToArray(e.target.files,state.generalPhotos,()=>{renderPhotos(); toast('Fotos gerais adicionadas pela câmera.');}));
-  $('fotoGeralGaleria')?.addEventListener('change',e=>addPhotosToArray(e.target.files,state.generalPhotos,()=>{renderPhotos(); toast('Fotos gerais adicionadas da galeria.');}));
+  $('fotoGeral')?.addEventListener('change',e=>addPhotosToArray(e.target.files,state.generalPhotos,()=>{renderPhotos(); toast('Fotos gerais adicionadas.');}));
+  $('btnFotoGeral')?.addEventListener('click',()=>openPhotoChoice(null)); $('btnFotoGeralResumo')?.addEventListener('click',()=>openPhotoChoice(null));
+  $('btnFecharFoto')?.addEventListener('click',closePhotoChoice); $('fotoModalCamera')?.addEventListener('change',e=>handleModalPhotoFiles(e.target.files)); $('fotoModalGaleria')?.addEventListener('change',e=>handleModalPhotoFiles(e.target.files));
   $('btnDitarRelato')?.addEventListener('click',dictateRelato); $('btnAudio')?.addEventListener('click',toggleAudio);
-  $('btnSalvar')?.addEventListener('click',saveChecklist); $('btnPDF')?.addEventListener('click',()=>gerarPDF()); $('btnPDFOrcamento')?.addEventListener('click',gerarPDFOrcamento); $('btnXLSX')?.addEventListener('click',()=>gerarXLSX('checklist')); $('btnA4')?.addEventListener('click',()=>printA4(false)); $('btnA4Topo')?.addEventListener('click',()=>printA4(false)); $('btnJSON')?.addEventListener('click',baixarJSON); $('btnAnexarOS')?.addEventListener('click',()=>anexarOS(false));
+  $('btnSalvar')?.addEventListener('click',saveChecklist); $('btnPDF')?.addEventListener('click',()=>gerarPDFCotacao()); $('btnPDFTecnico')?.addEventListener('click',()=>gerarPDF()); $('btnResumoRefresh')?.addEventListener('click',renderResumo); $('btnXLSX')?.addEventListener('click',()=>gerarXLSX('checklist')); $('btnA4')?.addEventListener('click',()=>printA4(false)); $('btnA4Topo')?.addEventListener('click',()=>printA4(false)); $('btnJSON')?.addEventListener('click',baixarJSON); $('btnAnexarOS')?.addEventListener('click',()=>anexarOS(false));
   $('btnEditarAtual')?.addEventListener('click',()=>go('screenChecklist')); $('btnExcluirAtual')?.addEventListener('click',deleteCurrentChecklist);
   $('btnEntrega')?.addEventListener('click',abrirEntrega); $('btnSalvarEntrega')?.addEventListener('click',saveEntrega); $('btnPdfEntrega')?.addEventListener('click',gerarPDFEntrega); $('btnXlsxEntrega')?.addEventListener('click',()=>gerarXLSX('entrega')); $('btnVoltarResumo')?.addEventListener('click',()=>go('screenResumo')); $('btnA4Entrega')?.addEventListener('click',()=>printA4(true)); $('btnAnexarEntrega')?.addEventListener('click',()=>anexarOS(true));
   $('btnFecharGestao')?.addEventListener('click',()=>$('modalGestao').classList.add('hidden'));
