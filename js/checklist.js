@@ -35,6 +35,9 @@ const state = {
   audioUrl:'',
   installPrompt:null,
   photoTarget:null,
+  lastQuoteData:null,
+  lastResumoCriticos:[],
+  focusItemId:'',
   theme: localStorage.getItem(THEME_KEY) || 'light'
 };
 
@@ -347,9 +350,14 @@ function buildQuoteData(data){
 }
 function groupDetails(g){ return (g.itens||[]).map(x=>`${x.secao}: ${x.item} (${x.acaoLabel||x.acao})`).join(' • '); }
 function photoThumbsHtml(g){ const fotos=(g.fotos||[]).slice(0,4); return fotos.length?`<div class="quote-photo-mini">${fotos.map(f=>`<img src="${esc(f)}" alt="foto">`).join('')}</div>`:''; }
-function renderQuoteGroup(title, groups, empty){
-  if(!groups.length) return `<div class="quote-group"><h3>${esc(title)}</h3><div class="notice">${esc(empty||'Nenhum item.')}</div></div>`;
-  return `<div class="quote-group"><h3>${esc(title)}</h3>${groups.map(g=>`<div class="quote-row"><div class="quote-qtd">${esc(g.qtd)}x</div><div class="quote-main"><b>${esc(g.nome)}</b><small>Posições: ${esc(g.posicoes.length?g.posicoes.join(', '):'confirmar')} • ${esc(g.acaoLabel||'')}</small><div class="quote-details">${esc(groupDetails(g)).slice(0,240)}</div>${photoThumbsHtml(g)}</div><div class="quote-obs"><small>${esc(compactObs(g.itens)||'Sem observação específica.')}</small></div></div>`).join('')}</div>`;
+function renderQuoteGroup(title, groups, empty, kind='geral'){
+  if(!groups.length) return `<div class="quote-group" data-quote-group="${esc(kind)}"><h3>${esc(title)}</h3><div class="notice">${esc(empty||'Nenhum item.')}</div></div>`;
+  return `<div class="quote-group" data-quote-group="${esc(kind)}"><h3>${esc(title)}</h3>${groups.map((g,idx)=>{
+    const detalhe=groupDetails(g);
+    const obs=compactObs(g.itens)||'Sem observação específica.';
+    const firstId=(g.itens||[])[0]?.id||'';
+    return `<div class="quote-row smart-row" data-quote-kind="${esc(kind)}" data-quote-index="${idx}" data-jump-item="${esc(firstId)}" title="Tocar para abrir no checklist"><div class="quote-qtd">${esc(g.qtd)}x</div><div class="quote-main"><b>${esc(g.nome)}</b><small>Posições: ${esc(g.posicoes.length?g.posicoes.join(', '):'confirmar')} • ${esc(g.acaoLabel||'')}</small><div class="quote-details">${esc(detalhe).slice(0,240)}</div>${photoThumbsHtml(g)}<button class="btn secondary small" data-open-quote="${esc(kind)}" data-quote-index="${idx}" type="button">Abrir item no checklist</button></div><div class="quote-obs"><small>${esc(obs)}</small>${(g.itens||[]).length>1?`<details><summary>Ver ${g.itens.length} origem(ns)</summary>${(g.itens||[]).map(x=>`<button class="mini-jump" data-jump-item="${esc(x.id||'')}" type="button">${esc(x.secao)} • ${esc(x.item)} — ${esc(x.acaoLabel||x.acao)}</button>`).join('')}</details>`:''}</div></div>`;
+  }).join('')}</div>`;
 }
 
 function saveDraft(){
@@ -417,6 +425,61 @@ function irParaInicio(){
 }
 
 function renderAll(){ renderSymptoms(); renderSections(); renderProgress(); renderPhotos(); renderDelivery(); renderOSSelecionadaInfo(); }
+
+function getGroupByKind(kind, idx){
+  const q=state.lastQuoteData || buildQuoteData(payloadBase());
+  const arr = kind==='pecas' ? q.pecas : kind==='servicos' ? q.servicos : kind==='avaliar' ? q.avaliar : [];
+  return arr[Number(idx)||0] || null;
+}
+function firstItemIdFromGroup(kind, idx){
+  const g=getGroupByKind(kind, idx);
+  return (g?.itens||[])[0]?.id || '';
+}
+function itemExistsInModel(itemId){ return !!itemMap()[itemId]; }
+function focusChecklistItem(itemId, message='Abrindo item no checklist.'){
+  if(!itemId || !itemExistsInModel(itemId)){ toast('Item não encontrado no checklist atual. Gere novamente o resumo.'); return; }
+  const im=itemMap()[itemId];
+  if($('buscaItem')) $('buscaItem').value='';
+  state.activeSection=im.secaoId || state.activeSection;
+  state.focusItemId=itemId;
+  go('screenChecklist');
+  renderSections(); renderProgress(); saveDraft();
+  setTimeout(()=>{
+    const el=document.querySelector(`[data-item-box="${CSS.escape(itemId)}"]`);
+    if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.classList.add('focus-flash'); setTimeout(()=>el.classList.remove('focus-flash'),1800); }
+  },120);
+  toast(message);
+}
+function goToFirstPendingItem(){
+  const pend=firstPendingItem();
+  if(!pend){ toast('Não há itens pendentes.'); return; }
+  focusChecklistItem(pend.item.id, `Faltam ${pend.pending} item(ns) em ${pend.sec.titulo}.`);
+}
+function goToFirstByAction(action){
+  const map=itemMap();
+  const ans=Object.values(state.answers||{}).find(a=>{
+    if(action==='tecnicas') return ACTIONS_FINAL.has(a.acao) && !['atencao','trocar'].includes(a.acao);
+    if(action==='acoes') return ACTIONS_FINAL.has(a.acao);
+    return a.acao===action;
+  });
+  if(ans?.id && map[ans.id]) focusChecklistItem(ans.id, 'Abrindo primeiro item deste grupo.');
+  else toast('Nenhum item encontrado neste grupo.');
+}
+function goToFirstQuoteKind(kind){
+  const q=state.lastQuoteData || buildQuoteData(payloadBase());
+  const arr = kind==='pecas' ? q.pecas : kind==='servicos' ? q.servicos : kind==='avaliar' ? q.avaliar : [];
+  if(!arr.length){ toast('Nenhum item neste grupo.'); return; }
+  const id=(arr[0].itens||[])[0]?.id;
+  focusChecklistItem(id, kind==='pecas'?'Abrindo primeira peça para cotar.':kind==='servicos'?'Abrindo primeiro serviço/conserto.':'Abrindo primeiro item para avaliar/aprovar.');
+}
+function bindResumoNavigation(){
+  const box=$('resumoLista'); if(!box) return;
+  $$('[data-resumo-jump]',box).forEach(b=>b.addEventListener('click',()=>goToFirstQuoteKind(b.dataset.resumoJump)));
+  $$('[data-open-quote]',box).forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); const id=firstItemIdFromGroup(b.dataset.openQuote,b.dataset.quoteIndex); focusChecklistItem(id,'Abrindo origem desta linha no checklist.'); }));
+  $$('[data-quote-kind][data-quote-index]',box).forEach(row=>row.addEventListener('click',e=>{ if(e.target.closest('button,summary,details,img')) return; const id=firstItemIdFromGroup(row.dataset.quoteKind,row.dataset.quoteIndex); focusChecklistItem(id,'Abrindo origem desta linha no checklist.'); }));
+  $$('[data-jump-item]',box).forEach(el=>el.addEventListener('click',e=>{ e.stopPropagation(); focusChecklistItem(el.dataset.jumpItem,'Abrindo item no checklist.'); }));
+}
+
 function renderProgress(){
   const s=stats();
   if($('progressBar')) $('progressBar').style.width=s.percent+'%';
@@ -557,7 +620,7 @@ function payloadBase(){
   const itens=Object.values(state.answers).map(a=>{ const fotos=state.itemPhotos[a.id]||[]; return {...a, fotos:fotos.length, fotoUrls:fotos, fotosUrls:fotos, criticidade:allItems[a.id]?.criticidade||'normal', obrigatorio:allItems[a.id]?.obrigatorio!==false}; });
   const osSel=state.osSelecionada||{}; const osRef=($('osRef')?.value||'').trim();
   const fotoUrls=[...(state.generalPhotos||[])]; const itemFotos=JSON.parse(JSON.stringify(state.itemPhotos||{}));
-  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15-18', versao:'v15.18', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef, osId:osSel.id||'', osColecao:osSel._col||'', osNumero:osSel.numero||osSel.codigo||osSel.osRef||osRef, osLabel:osSel.label||osRef, osStatus:osSel.status||osSel.etapa||'', osCliente:osSel.clienteNome||osSel.nomeCliente||osSel.cliente?.nome||'', osVeiculo:osSel.veiculoLabel||osSel.veiculoModelo||osSel.veiculo||osSel.veiculoSnapshot?.modelo||'', km:($('km')?.value||'').trim(), responsavel:tecnico, tecnicoChecklist:tecnico, tecnicoNome:tecnico, responsavelLogin:state.session?.name||'', responsavelPerfil:state.session?.role||'', verificadorEntrega:verificador, relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:fotoUrls.length, fotoUrls, fotosGeraisUrls:fotoUrls, itemPhotos:itemFotos, itemFotos, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
+  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15-19', versao:'v15.19', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef, osId:osSel.id||'', osColecao:osSel._col||'', osNumero:osSel.numero||osSel.codigo||osSel.osRef||osRef, osLabel:osSel.label||osRef, osStatus:osSel.status||osSel.etapa||'', osCliente:osSel.clienteNome||osSel.nomeCliente||osSel.cliente?.nome||'', osVeiculo:osSel.veiculoLabel||osSel.veiculoModelo||osSel.veiculo||osSel.veiculoSnapshot?.modelo||'', km:($('km')?.value||'').trim(), responsavel:tecnico, tecnicoChecklist:tecnico, tecnicoNome:tecnico, responsavelLogin:state.session?.name||'', responsavelPerfil:state.session?.role||'', verificadorEntrega:verificador, relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:fotoUrls.length, fotoUrls, fotosGeraisUrls:fotoUrls, itemPhotos:itemFotos, itemFotos, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
 }
 async function saveChecklist(){
   if(!placaNorm($('placa')?.value||'')) { toast('Informe a placa antes de salvar.'); go('screenInicio'); return null; }
@@ -585,11 +648,13 @@ async function saveChecklist(){
 function renderResumo(){
   const box=$('resumoLista'); if(!box) return;
   const base=payloadBase(); const q=buildQuoteData(base); const crit=base.itens.filter(i=>ACTIONS_FINAL.has(i.acao));
+  state.lastQuoteData=q; state.lastResumoCriticos=crit;
   $('resumoPill').textContent = state.lastSavedId ? `Editando ${state.lastSavedId}` : `${q.pecas.length} peças • ${q.servicos.length} serviços`;
   if($('btnSalvar')) $('btnSalvar').textContent = state.lastSavedId ? '💾 Salvar alterações' : '✅ Salvar checklist';
   if($('btnExcluirAtual')) $('btnExcluirAtual').disabled = !state.lastSavedId || !isGestor();
-  const top=`${state.lastSavedId?`<div class="notice warn"><b>Modo edição:</b> este checklist já foi salvo. Se alterar e tocar em “Salvar alterações”, o registro ${esc(state.lastSavedId)} será atualizado.</div>`:''}<div class="quote-panel"><div class="quote-head"><div class="quote-card"><b>${q.totalPecas}</b><span>peças estimadas</span></div><div class="quote-card"><b>${q.pecas.length}</b><span>grupos de peça</span></div><div class="quote-card"><b>${q.servicos.length}</b><span>serviços/consertos</span></div><div class="quote-card"><b>${q.avaliar.length}</b><span>avaliar/aprovar</span></div></div><div class="notice"><b>Resumo inteligente:</b> as peças iguais são agrupadas por quantidade e posição. Os serviços ficam juntos. O laudo técnico completo continua disponível separado.</div></div>`;
-  box.innerHTML = top + renderQuoteGroup('🧾 Peças para cotar/comprar — agrupadas', q.pecas, 'Nenhuma peça para cotar.') + renderQuoteGroup('🛠️ Serviços/consertos — agrupados', q.servicos, 'Nenhum serviço separado.') + renderQuoteGroup('🔎 Itens para avaliar/aprovar', q.avaliar, 'Nada pendente de avaliação.') + `<div class="quote-group"><h3>📋 Lista técnica completa (${crit.length} itens)</h3>${crit.slice(0,18).map(i=>`<div class="res-line"><b>${esc(i.secao)} • ${esc(i.item)}</b><span class="pill ${esc(actionInfo(i.acao).classe)}">${esc(actionInfo(i.acao).emoji)} ${esc(i.acaoLabel)}</span>${i.obs?`<small>${esc(i.obs)}</small>`:''}</div>`).join('')}${crit.length>18?`<div class="notice">Mais ${crit.length-18} item(ns) técnicos estão no PDF técnico completo e na planilha detalhada.</div>`:''}</div>`;
+  const top=`${state.lastSavedId?`<div class="notice warn"><b>Modo edição:</b> este checklist já foi salvo. Se alterar e tocar em “Salvar alterações”, o registro ${esc(state.lastSavedId)} será atualizado.</div>`:''}<div class="quote-panel"><div class="quote-head"><button class="quote-card click-card" data-resumo-jump="pecas" type="button"><b>${q.totalPecas}</b><span>peças estimadas</span></button><button class="quote-card click-card" data-resumo-jump="pecas" type="button"><b>${q.pecas.length}</b><span>grupos de peça</span></button><button class="quote-card click-card" data-resumo-jump="servicos" type="button"><b>${q.servicos.length}</b><span>serviços/consertos</span></button><button class="quote-card click-card" data-resumo-jump="avaliar" type="button"><b>${q.avaliar.length}</b><span>avaliar/aprovar</span></button></div><div class="notice"><b>Resumo inteligente:</b> toque em qualquer card, peça, serviço ou item para voltar direto ao ponto correspondente do checklist. Nada foi removido: o laudo técnico completo continua separado.</div></div>`;
+  box.innerHTML = top + renderQuoteGroup('🧾 Peças para cotar/comprar — agrupadas', q.pecas, 'Nenhuma peça para cotar.', 'pecas') + renderQuoteGroup('🛠️ Serviços/consertos — agrupados', q.servicos, 'Nenhum serviço separado.', 'servicos') + renderQuoteGroup('🔎 Itens para avaliar/aprovar', q.avaliar, 'Nada pendente de avaliação.', 'avaliar') + `<div class="quote-group"><h3>📋 Lista técnica completa (${crit.length} itens)</h3>${crit.slice(0,18).map(i=>`<div class="res-line smart-row" data-jump-item="${esc(i.id||'')}"><b>${esc(i.secao)} • ${esc(i.item)}</b><span class="pill ${esc(actionInfo(i.acao).classe)}">${esc(actionInfo(i.acao).emoji)} ${esc(i.acaoLabel)}</span>${i.obs?`<small>${esc(i.obs)}</small>`:''}</div>`).join('')}${crit.length>18?`<div class="notice">Mais ${crit.length-18} item(ns) técnicos estão no PDF técnico completo e na planilha detalhada.</div>`:''}</div>`;
+  bindResumoNavigation();
 }
 
 
@@ -748,7 +813,7 @@ function entregaPayloadBase(){
   const base=payloadBase();
   const itens=getCriticalItems().map(i=>({checklistItemId:i.id, item:i.item, secao:i.secao, acao:i.acao, acaoLabel:i.acaoLabel, diagnosticoObs:i.obs, fotos:i.fotos||0, fotoUrls:i.fotoUrls||[], entrega:state.delivery[i.id]||{status:'pendente'}}));
   const dataEntrega=($('entregaData')?.value||'').trim();
-  return {id:uid(), checklistId:state.lastSavedId||base.id, tenantId:base.tenantId, oficinaNome:base.oficinaNome, placa:base.placa, osRef:base.osRef, osId:base.osId, osColecao:base.osColecao, osNumero:base.osNumero, osLabel:base.osLabel, km:base.km, tecnicoChecklist:base.tecnicoChecklist||base.responsavel, responsavel:base.responsavel, conferente:($('conferente')?.value||$('verificadorEntrega')?.value||state.session?.name||'').trim(), verificadorEntrega:($('verificadorEntrega')?.value||$('conferente')?.value||state.session?.name||'').trim(), entreguePor:($('entregaEntreguePor')?.value||'').trim(), recebidoPor:($('entregaRecebidoPor')?.value||'').trim(), documentoRecebedor:($('entregaDoc')?.value||'').trim(), dataEntrega:dataEntrega||nowISO(), perfil:state.session?.role||'', status:$('entregaStatus')?.value||'em_conferencia', observacaoFinal:$('entregaObs')?.value||'', itens, fotoUrls:base.fotoUrls||[], fotosGeraisUrls:base.fotoUrls||[], itemPhotos:base.itemPhotos||{}, itemFotos:base.itemFotos||{}, criadoEm:nowISO(), atualizadoEm:nowISO(), app:'OFICIN-IA-CHECKLIST-V15-18', versao:'v15.18', registroEntrega:true};
+  return {id:uid(), checklistId:state.lastSavedId||base.id, tenantId:base.tenantId, oficinaNome:base.oficinaNome, placa:base.placa, osRef:base.osRef, osId:base.osId, osColecao:base.osColecao, osNumero:base.osNumero, osLabel:base.osLabel, km:base.km, tecnicoChecklist:base.tecnicoChecklist||base.responsavel, responsavel:base.responsavel, conferente:($('conferente')?.value||$('verificadorEntrega')?.value||state.session?.name||'').trim(), verificadorEntrega:($('verificadorEntrega')?.value||$('conferente')?.value||state.session?.name||'').trim(), entreguePor:($('entregaEntreguePor')?.value||'').trim(), recebidoPor:($('entregaRecebidoPor')?.value||'').trim(), documentoRecebedor:($('entregaDoc')?.value||'').trim(), dataEntrega:dataEntrega||nowISO(), perfil:state.session?.role||'', status:$('entregaStatus')?.value||'em_conferencia', observacaoFinal:$('entregaObs')?.value||'', itens, fotoUrls:base.fotoUrls||[], fotosGeraisUrls:base.fotoUrls||[], itemPhotos:base.itemPhotos||{}, itemFotos:base.itemFotos||{}, criadoEm:nowISO(), atualizadoEm:nowISO(), app:'OFICIN-IA-CHECKLIST-V15-19', versao:'v15.19', registroEntrega:true};
 }
 async function saveEntrega(){
   setBusy('btnSalvarEntrega',true,'Salvando entrega...');
@@ -1050,8 +1115,8 @@ function checklistResumoParaOS(data, entrega=false){
   return {
     id:data?.id||state.lastSavedId||uid(),
     tipo: entrega?'entrega':'tecnico',
-    app:data?.app||'OFICIN-IA-CHECKLIST-V15-18',
-    versao:data?.versao||'v15.18',
+    app:data?.app||'OFICIN-IA-CHECKLIST-V15-19',
+    versao:data?.versao||'v15.19',
     placa:data?.placa||placaNorm($('placa')?.value||''),
     osRef:data?.osRef||($('osRef')?.value||'').trim(),
     osId:data?.osId||state.osSelecionada?.id||'',
@@ -1204,6 +1269,11 @@ function bind(){
   ['btnHomeTop','btnInicioFix','btnInicioResumo'].forEach(id=>$(id)?.addEventListener('click',irParaInicio));
   ['btnAbrirSaas','btnIrSaas'].forEach(id=>$(id)?.addEventListener('click',abrirSaas)); ['btnInstalar','btnInstalarLogin'].forEach(id=>$(id)?.addEventListener('click',instalar));
   $('btnBack')?.addEventListener('click',back); $('btnNext')?.addEventListener('click',next); $('btnNovo')?.addEventListener('click',()=>{ if(confirm('Zerar rascunho e iniciar novo checklist?')) clearDraft(); }); $('btnNovoFinal')?.addEventListener('click',()=>{ clearDraft(); go('screenInicio'); });
+  $('kPend')?.closest('.kpi')?.addEventListener('click',goToFirstPendingItem);
+  $('kTrocar')?.closest('.kpi')?.addEventListener('click',()=>goToFirstByAction('trocar'));
+  $('kAt')?.closest('.kpi')?.addEventListener('click',()=>goToFirstByAction('atencao'));
+  $('kAcoes')?.closest('.kpi')?.addEventListener('click',()=>goToFirstByAction('tecnicas'));
+  $('kOk')?.closest('.kpi')?.addEventListener('click',()=>goToFirstByAction('ok'));
   $('placa')?.addEventListener('input',e=>{e.target.value=placaNorm(e.target.value); state.osSelecionada=null; renderOSSelecionadaInfo(); saveDraft();}); $('osRef')?.addEventListener('input',()=>{ state.osSelecionada=null; renderOSSelecionadaInfo(); saveDraft(); }); ['km','tecnicoChecklist','verificadorEntrega','conferente','entregaEntreguePor','entregaRecebidoPor','entregaDoc','entregaData','entregaObs','relato','diagnostico'].forEach(id=>$(id)?.addEventListener('input',saveDraft));
   $('btnHistorico')?.addEventListener('click',buscarHistorico); $('btnHistoricoFinal')?.addEventListener('click',()=>{go('screenInicio'); buscarHistorico();});
   $('btnConsultar')?.addEventListener('click',consultar); $('btnRodarConsulta')?.addEventListener('click',consultar); $('btnFecharConsulta')?.addEventListener('click',()=>go('screenInicio')); $('btnVoltarInicioConsulta')?.addEventListener('click',()=>go('screenInicio')); $('btnExportConsulta')?.addEventListener('click',gerarConsultaXLSX);
