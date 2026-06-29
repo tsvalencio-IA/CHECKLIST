@@ -41,7 +41,7 @@ Depois rode a Action novamente em **Actions > Build Checklist APK > Run workflow
 Correção V15.9: impressão manual A4 com grade de colunas fixas para impedir sobreposição do N/A sobre os nomes dos itens.
 
 
-## V15.18
+## V15.19
 - Fotos por câmera ou galeria em fotos gerais e em cada item.
 - Resumo inteligente de cotação com peças agrupadas por quantidade/posição.
 - Serviços agrupados separados de peças.

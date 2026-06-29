@@ -109,7 +109,7 @@ A impressão manual do mecânico foi compactada para o padrão oficina em até 2
 - Cache atualizado para evitar arquivo antigo no APK/PWA.
 
 
-## V15.18
+## V15.19
 - Fotos por câmera ou galeria em fotos gerais e em cada item.
 - Resumo inteligente de cotação com peças agrupadas por quantidade/posição.
 - Serviços agrupados separados de peças.

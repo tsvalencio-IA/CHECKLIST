@@ -1,8 +1,8 @@
 {
-  "name": "oficin-ia-checklist-v15-18-cotacao-funcional",
-  "version": "15.18.0",
+  "name": "oficin-ia-checklist-v15-19-fluxo-restaurado",
+  "version": "15.19.0",
   "private": true,
-  "description": "OFICIN-IA Checklist com cotação compacta, peças/serviços agrupados e fotos por câmera ou galeria.",
+  "description": "OFICIN-IA Checklist com cotação compacta, peças/serviços agrupados, fotos por câmera/galeria e fluxo restaurado.",
   "scripts": {
     "prepare:apk": "node scripts/prepare-apk.js",
     "android:icons": "node scripts/generate-android-icons.js",
