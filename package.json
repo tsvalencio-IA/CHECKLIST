@@ -1,8 +1,8 @@
 {
-  "name": "oficin-ia-checklist-v15-19-fluxo-restaurado",
-  "version": "15.19.0",
+  "name": "oficin-ia-checklist-v15-20-base-1518-fluxo-modelo-detalhado",
+  "version": "15.20.0",
   "private": true,
-  "description": "OFICIN-IA Checklist com cotação compacta, peças/serviços agrupados, fotos por câmera/galeria e fluxo restaurado.",
+  "description": "OFICIN-IA Checklist V15.20: preserva base V15.18, restaura fluxo de navegação e mantém modelo detalhado por posição/lado.",
   "scripts": {
     "prepare:apk": "node scripts/prepare-apk.js",
     "android:icons": "node scripts/generate-android-icons.js",
