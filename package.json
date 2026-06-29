@@ -1,8 +1,8 @@
 {
-  "name": "oficin-ia-checklist-v15-17-cotacao-agrupada-galeria",
-  "version": "15.17.0",
+  "name": "oficin-ia-checklist-v15-18-cotacao-funcional",
+  "version": "15.18.0",
   "private": true,
-  "description": "OFICIN-IA Checklist com peças agrupadas para cotação, upload de fotos por câmera ou galeria e miniaturas no PDF.",
+  "description": "OFICIN-IA Checklist com cotação compacta, peças/serviços agrupados e fotos por câmera ou galeria.",
   "scripts": {
     "prepare:apk": "node scripts/prepare-apk.js",
     "android:icons": "node scripts/generate-android-icons.js",

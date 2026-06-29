@@ -107,3 +107,11 @@ A impressão manual do mecânico foi compactada para o padrão oficina em até 2
 - Consulta de checklists com botão **Editar**, **PDF** e **Excluir** para gestor.
 - PDF premium redesenhado com cabeçalho profissional, resumo visual, seções separadas, badges de status e assinaturas.
 - Cache atualizado para evitar arquivo antigo no APK/PWA.
+
+
+## V15.18
+- Fotos por câmera ou galeria em fotos gerais e em cada item.
+- Resumo inteligente de cotação com peças agrupadas por quantidade/posição.
+- Serviços agrupados separados de peças.
+- PDF de cotação compacto para 1 a 2 páginas quando possível.
+- XLSX inteligente com abas Resumo_Executivo, Pecas_Agrupadas, Servicos_Agrupados, Avaliar_Aprovar, Itens_Detalhados e Fotos.
