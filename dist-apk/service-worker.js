@@ -1,5 +1,5 @@
 'use strict';
-const CACHE_NAME = 'oficin-ia-checklist-v15.14.0-tecnico-entrega-fotos';
+const CACHE_NAME = 'oficin-ia-checklist-v15.15.0-modelo-cotacao-posicoes';
 const CORE = [
   './', './index.html', './checklist.html', './login.html', './manifest.webmanifest',
   './js/config.js', './js/checklist.js', './data/checklist-model.json',

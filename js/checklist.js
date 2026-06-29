@@ -6,7 +6,7 @@ const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 const APP = window.CHECKLIST_APP || {};
 const SESSION_KEY = 'OFICINIA_CHECKLIST_V15_SESSION';
 const DRAFT_KEY = 'OFICINIA_CHECKLIST_V15_DRAFT';
-const MODEL_KEY = 'OFICINIA_CHECKLIST_V15_MODEL';
+const MODEL_KEY = 'OFICINIA_CHECKLIST_V15_15_MODEL';
 const THEME_KEY = 'OFICINIA_CHECKLIST_V15_THEME';
 const DEFAULT_BRAND = { name:'Checklist Inteligente OFICIN-IA', subtitle:'App separado • APK próprio • mesmo Firebase', color:'#2563eb', footer:'Powered by thIAguinho Soluções Digitais' };
 const ACTIONS_FINAL = new Set(['atencao','trocar','retificar','regular','ajustar','lubrificar','limpar','revisar']);
@@ -216,14 +216,29 @@ async function login(){
   finally{ setBusy('btnLogin',false); }
 }
 
+function modelRank(model){
+  const s=String(model?.versao||'');
+  const m=s.match(/v15[.\-]?(\d+)/i) || s.match(/15\.(\d+)/);
+  if(m) return Number(m[1])||0;
+  if(s.includes('v15.15') || s.includes('15.15')) return 15;
+  return 0;
+}
+
 async function loadModel(tryRemote=false){
   let model=null;
-  try{ const res=await fetch('./data/checklist-model.json?v=15.0.0',{cache:'no-store'}); model=await res.json(); }catch(e){ console.warn('model local',e); }
-  try{ const saved=JSON.parse(localStorage.getItem(MODEL_KEY)||'null'); if(saved && saved.secoes) model=saved; }catch(e){}
+  try{ const res=await fetch('./data/checklist-model.json?v=15.15.0',{cache:'no-store'}); model=await res.json(); }catch(e){ console.warn('model local',e); }
+  try{
+    const saved=JSON.parse(localStorage.getItem(MODEL_KEY)||'null');
+    if(saved && saved.secoes && modelRank(saved) >= modelRank(model)) model=saved;
+  }catch(e){}
   if(tryRemote && state.session){
     try{
       const doc=await activeDb().collection('checklistModelos').doc('default').get();
-      if(doc.exists && doc.data()?.model?.secoes){ model=doc.data().model; localStorage.setItem(MODEL_KEY,JSON.stringify(model)); }
+      const remote=doc.exists ? doc.data()?.model : null;
+      if(remote?.secoes && modelRank(remote) >= modelRank(model)){
+        model=remote;
+        localStorage.setItem(MODEL_KEY,JSON.stringify(model));
+      }
     }catch(e){ console.warn('modelo remoto indisponível',e.message); }
   }
   state.model=model || {versao:'fallback',acoesPadrao:[],sintomas:[],secoes:[]};
@@ -469,7 +484,7 @@ function payloadBase(){
   const itens=Object.values(state.answers).map(a=>{ const fotos=state.itemPhotos[a.id]||[]; return {...a, fotos:fotos.length, fotoUrls:fotos, fotosUrls:fotos, criticidade:allItems[a.id]?.criticidade||'normal', obrigatorio:allItems[a.id]?.obrigatorio!==false}; });
   const osSel=state.osSelecionada||{}; const osRef=($('osRef')?.value||'').trim();
   const fotoUrls=[...(state.generalPhotos||[])]; const itemFotos=JSON.parse(JSON.stringify(state.itemPhotos||{}));
-  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15-14', versao:'v15.14', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef, osId:osSel.id||'', osColecao:osSel._col||'', osNumero:osSel.numero||osSel.codigo||osSel.osRef||osRef, osLabel:osSel.label||osRef, osStatus:osSel.status||osSel.etapa||'', osCliente:osSel.clienteNome||osSel.nomeCliente||osSel.cliente?.nome||'', osVeiculo:osSel.veiculoLabel||osSel.veiculoModelo||osSel.veiculo||osSel.veiculoSnapshot?.modelo||'', km:($('km')?.value||'').trim(), responsavel:tecnico, tecnicoChecklist:tecnico, tecnicoNome:tecnico, responsavelLogin:state.session?.name||'', responsavelPerfil:state.session?.role||'', verificadorEntrega:verificador, relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:fotoUrls.length, fotoUrls, fotosGeraisUrls:fotoUrls, itemPhotos:itemFotos, itemFotos, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
+  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15-15', versao:'v15.15', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef, osId:osSel.id||'', osColecao:osSel._col||'', osNumero:osSel.numero||osSel.codigo||osSel.osRef||osRef, osLabel:osSel.label||osRef, osStatus:osSel.status||osSel.etapa||'', osCliente:osSel.clienteNome||osSel.nomeCliente||osSel.cliente?.nome||'', osVeiculo:osSel.veiculoLabel||osSel.veiculoModelo||osSel.veiculo||osSel.veiculoSnapshot?.modelo||'', km:($('km')?.value||'').trim(), responsavel:tecnico, tecnicoChecklist:tecnico, tecnicoNome:tecnico, responsavelLogin:state.session?.name||'', responsavelPerfil:state.session?.role||'', verificadorEntrega:verificador, relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:fotoUrls.length, fotoUrls, fotosGeraisUrls:fotoUrls, itemPhotos:itemFotos, itemFotos, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
 }
 async function saveChecklist(){
   if(!placaNorm($('placa')?.value||'')) { toast('Informe a placa antes de salvar.'); go('screenInicio'); return null; }
@@ -660,7 +675,7 @@ function entregaPayloadBase(){
   const base=payloadBase();
   const itens=getCriticalItems().map(i=>({checklistItemId:i.id, item:i.item, secao:i.secao, acao:i.acao, acaoLabel:i.acaoLabel, diagnosticoObs:i.obs, fotos:i.fotos||0, fotoUrls:i.fotoUrls||[], entrega:state.delivery[i.id]||{status:'pendente'}}));
   const dataEntrega=($('entregaData')?.value||'').trim();
-  return {id:uid(), checklistId:state.lastSavedId||base.id, tenantId:base.tenantId, oficinaNome:base.oficinaNome, placa:base.placa, osRef:base.osRef, osId:base.osId, osColecao:base.osColecao, osNumero:base.osNumero, osLabel:base.osLabel, km:base.km, tecnicoChecklist:base.tecnicoChecklist||base.responsavel, responsavel:base.responsavel, conferente:($('conferente')?.value||$('verificadorEntrega')?.value||state.session?.name||'').trim(), verificadorEntrega:($('verificadorEntrega')?.value||$('conferente')?.value||state.session?.name||'').trim(), entreguePor:($('entregaEntreguePor')?.value||'').trim(), recebidoPor:($('entregaRecebidoPor')?.value||'').trim(), documentoRecebedor:($('entregaDoc')?.value||'').trim(), dataEntrega:dataEntrega||nowISO(), perfil:state.session?.role||'', status:$('entregaStatus')?.value||'em_conferencia', observacaoFinal:$('entregaObs')?.value||'', itens, fotoUrls:base.fotoUrls||[], fotosGeraisUrls:base.fotoUrls||[], itemPhotos:base.itemPhotos||{}, itemFotos:base.itemFotos||{}, criadoEm:nowISO(), atualizadoEm:nowISO(), app:'OFICIN-IA-CHECKLIST-V15-14', versao:'v15.14', registroEntrega:true};
+  return {id:uid(), checklistId:state.lastSavedId||base.id, tenantId:base.tenantId, oficinaNome:base.oficinaNome, placa:base.placa, osRef:base.osRef, osId:base.osId, osColecao:base.osColecao, osNumero:base.osNumero, osLabel:base.osLabel, km:base.km, tecnicoChecklist:base.tecnicoChecklist||base.responsavel, responsavel:base.responsavel, conferente:($('conferente')?.value||$('verificadorEntrega')?.value||state.session?.name||'').trim(), verificadorEntrega:($('verificadorEntrega')?.value||$('conferente')?.value||state.session?.name||'').trim(), entreguePor:($('entregaEntreguePor')?.value||'').trim(), recebidoPor:($('entregaRecebidoPor')?.value||'').trim(), documentoRecebedor:($('entregaDoc')?.value||'').trim(), dataEntrega:dataEntrega||nowISO(), perfil:state.session?.role||'', status:$('entregaStatus')?.value||'em_conferencia', observacaoFinal:$('entregaObs')?.value||'', itens, fotoUrls:base.fotoUrls||[], fotosGeraisUrls:base.fotoUrls||[], itemPhotos:base.itemPhotos||{}, itemFotos:base.itemFotos||{}, criadoEm:nowISO(), atualizadoEm:nowISO(), app:'OFICIN-IA-CHECKLIST-V15-15', versao:'v15.15', registroEntrega:true};
 }
 async function saveEntrega(){
   setBusy('btnSalvarEntrega',true,'Salvando entrega...');
@@ -791,13 +806,91 @@ async function gerarPDF(source){
 }
 
 function gerarPDFEntrega(){ gerarPDF(entregaPayloadBase()); }
+
+function inferPosicao(item){
+  const t=norm(item?.item||item?.titulo||'');
+  const pos=[];
+  if(t.includes('dianteir')) pos.push('dianteiro');
+  if(t.includes('traseir')) pos.push('traseiro');
+  if(t.includes('esquerd')) pos.push('esquerdo');
+  if(t.includes('direit')) pos.push('direito');
+  if(t.includes('motorista')) pos.push('motorista');
+  if(t.includes('passageiro')) pos.push('passageiro');
+  if(t.includes('porta malas')||t.includes('tampa traseira')) pos.push('traseira/porta-malas');
+  return pos.join(' ') || '';
+}
+function tipoOrcamentoPorAcao(acao){
+  if(acao==='trocar') return 'PEÇA + SERVIÇO';
+  if(['retificar','regular','ajustar','lubrificar','limpar'].includes(acao)) return 'SERVIÇO';
+  if(['revisar','atencao'].includes(acao)) return 'AVALIAR / ORÇAR';
+  return '';
+}
+function isAcaoOrcavel(acao){ return !!tipoOrcamentoPorAcao(acao); }
+function rowsCotacaoPecas(base){
+  return (base.itens||[]).filter(i=>['trocar','atencao','revisar'].includes(i.acao)).map(i=>({
+    Sistema:i.secao||'', Componente:i.item||'', Posicao:inferPosicao(i), Acao:i.acaoLabel||i.acao,
+    Quantidade:'', Motivo:i.obs||'', Criticidade:i.criticidade||'', Fotos:i.fotos||0,
+    LinksFotos:(i.fotoUrls||[]).join(' | '), Fornecedor:'', Marca:'', Codigo:'', ValorUnitario:'', Disponibilidade:'', Aprovado:'', ObservacaoCompras:''
+  }));
+}
+function rowsServicos(base){
+  return (base.itens||[]).filter(i=>isAcaoOrcavel(i.acao)).map(i=>({
+    Sistema:i.secao||'', ServicoOuComponente:i.item||'', Posicao:inferPosicao(i), Acao:i.acaoLabel||i.acao,
+    Tipo:tipoOrcamentoPorAcao(i.acao), Prioridade:i.criticidade==='critico'?'Alta':(i.criticidade==='importante'?'Média':'Normal'),
+    ObservacaoTecnica:i.obs||'', MaoDeObra:'', ValorMaoDeObra:'', Status:'Aguardando orçamento', Aprovado:''
+  }));
+}
+function rowsOrcamentoCliente(base){
+  return (base.itens||[]).filter(i=>isAcaoOrcavel(i.acao)).map(i=>({
+    Grupo: i.acao==='trocar' ? 'Peça necessária' : (['retificar','regular','ajustar','lubrificar','limpar'].includes(i.acao) ? 'Serviço necessário' : 'Recomendado / avaliar'),
+    Sistema:i.secao||'', Item:i.item||'', Acao:i.acaoLabel||i.acao, Posicao:inferPosicao(i),
+    Explicacao:i.obs||'', Prioridade:i.criticidade==='critico'?'Crítico':(i.criticidade==='importante'?'Importante':'Normal'),
+    ValorPecas:'', ValorServico:'', Total:'', AprovadoCliente:''
+  }));
+}
+async function gerarPDFOrcamento(){
+  const data=payloadBase(); const jsPDF=window.jspdf?.jsPDF; if(!jsPDF){ toast('Biblioteca PDF não carregou.'); return; }
+  const pecas=rowsCotacaoPecas(data); const servs=rowsServicos(data); const cliente=rowsOrcamentoCliente(data);
+  const doc=new jsPDF({unit:'mm',format:'a4'}); let y=0;
+  doc.setFillColor(15,23,42); doc.rect(0,0,210,28,'F');
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.text('PRÉ-ORÇAMENTO / COTAÇÃO TÉCNICA',12,13);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.text('Separado por peças, serviços e itens para aprovação do cliente',12,20);
+  y=36; doc.setTextColor(15,23,42); doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.text(`Placa: ${data.placa||'-'}   O.S.: ${data.osRef||data.osNumero||'-'}   KM: ${data.km||'-'}   Técnico: ${data.tecnicoChecklist||data.responsavel||'-'}`.slice(0,118),12,y); y+=9;
+  const bloco=(titulo,arr,cols)=>{
+    y=pdfSectionHeader(doc,titulo,y+2);
+    if(!arr.length){ doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(100,116,139); doc.text('Nenhum item nesta categoria.',12,y); y+=6; return; }
+    arr.forEach((r,idx)=>{
+      y=pdfEnsurePage(doc,y+7);
+      doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(15,23,42);
+      doc.text(`${idx+1}. ${r.Sistema||''} • ${r.Componente||r.ServicoOuComponente||r.Item||''}`.slice(0,92),12,y);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(71,85,105);
+      const linha=`Ação: ${r.Acao||'-'}${r.Posicao?' • Posição: '+r.Posicao:''}${r.Prioridade?' • Prioridade: '+r.Prioridade:''}${r.Criticidade?' • Criticidade: '+r.Criticidade:''}`;
+      doc.text(linha.slice(0,115),12,y+4);
+      if(r.Motivo||r.ObservacaoTecnica||r.Explicacao){ y+=8; y=pdfLine(doc,'Obs.: '+(r.Motivo||r.ObservacaoTecnica||r.Explicacao),12,y,186)+1; } else y+=8;
+      doc.setDrawColor(226,232,240); doc.line(12,y,198,y); y+=2;
+    });
+  };
+  bloco('1. Peças para cotação / compra',pecas);
+  bloco('2. Serviços e consertos',servs);
+  bloco('3. Versão resumida para aprovação do cliente',cliente);
+  y=pdfEnsurePage(doc,y+12); doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.text('Assinaturas / aprovação',12,y); y+=16;
+  doc.setDrawColor(100,116,139); doc.line(12,y,70,y); doc.line(78,y,136,y); doc.line(144,y,198,y);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(100,116,139); doc.text('Responsável técnico',41,y+4,{align:'center'}); doc.text('Gestor / orçamento',107,y+4,{align:'center'}); doc.text('Cliente / aprovação',171,y+4,{align:'center'});
+  const total=doc.internal.getNumberOfPages(); for(let i=1;i<=total;i++){ doc.setPage(i); pdfFooter(doc); }
+  doc.save(`orcamento_${data.placa||'veiculo'}_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+
 function gerarXLSX(kind='checklist'){
   if(!window.XLSX){ toast('Biblioteca XLSX não carregou.'); return; }
   const base=payloadBase();
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{Placa:base.placa,OS:base.osRef,KM:base.km,Oficina:base.oficinaNome,Tecnico:base.tecnicoChecklist||base.responsavel,ConferenteEntrega:base.verificadorEntrega||'',FotosGerais:(base.fotoUrls||[]).length,Data:fmtDateTime(base.criadoEm),OK:base.stats.ok,Atencao:base.stats.atencao,Trocar:base.stats.trocar,AcoesTecnicas:base.stats.tecnicas,Pendentes:base.stats.pending}]),'Resumo');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(base.itens.map(i=>({Secao:i.secao,Item:i.item,Acao:i.acaoLabel||i.acao,Obs:i.obs||'',Obrigatorio:i.obrigatorio?'Sim':'Não',Criticidade:i.criticidade||'',Fotos:i.fotos||0,LinksFotos:(i.fotoUrls||[]).join(' | '),AtualizadoPor:i.updatedBy||''}))),'Itens');
-  const entrega=getCriticalItems().map(i=>({Secao:i.secao,Item:i.item,AcaoTecnica:i.acaoLabel,StatusEntrega:state.delivery[i.id]?.status||'pendente',ObsEntrega:state.delivery[i.id]?.obs||'',Conferente:base.verificadorEntrega||'',EntreguePor:$('entregaEntreguePor')?.value||'',RecebidoPor:$('entregaRecebidoPor')?.value||'',DataEntrega:$('entregaData')?.value||''}));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rowsCotacaoPecas(base)),'Cotacao_Pecas');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rowsServicos(base)),'Servicos_Consertos');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rowsOrcamentoCliente(base)),'Orcamento_Cliente');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(base.itens.map(i=>({Secao:i.secao,Item:i.item,Posicao:inferPosicao(i),Acao:i.acaoLabel||i.acao,TipoOrcamento:tipoOrcamentoPorAcao(i.acao),Obs:i.obs||'',Obrigatorio:i.obrigatorio?'Sim':'Não',Criticidade:i.criticidade||'',Fotos:i.fotos||0,LinksFotos:(i.fotoUrls||[]).join(' | '),AtualizadoPor:i.updatedBy||''}))),'Itens_Tecnicos');
+  const entrega=getCriticalItems().map(i=>({Secao:i.secao,Item:i.item,Posicao:inferPosicao(i),AcaoTecnica:i.acaoLabel,StatusEntrega:state.delivery[i.id]?.status||'pendente',ObsEntrega:state.delivery[i.id]?.obs||'',Conferente:base.verificadorEntrega||'',EntreguePor:$('entregaEntreguePor')?.value||'',RecebidoPor:$('entregaRecebidoPor')?.value||'',DataEntrega:$('entregaData')?.value||''}));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(entrega),'Entrega');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet((state.history.os||[]).map(o=>({OS:o.numero||o.codigo||o.id,Status:o.status||o.etapa||'',Cliente:o.clienteNome||o.cliente?.nome||'',Data:fmtDateTime(o.criadoEm||o.createdAt||o.data)}))),'Historico_OS');
   XLSX.writeFile(wb,`${kind}_${base.placa||'veiculo'}_${new Date().toISOString().slice(0,10)}.xlsx`);
@@ -896,8 +989,8 @@ function checklistResumoParaOS(data, entrega=false){
   return {
     id:data?.id||state.lastSavedId||uid(),
     tipo: entrega?'entrega':'tecnico',
-    app:data?.app||'OFICIN-IA-CHECKLIST-V15-14',
-    versao:data?.versao||'v15.14',
+    app:data?.app||'OFICIN-IA-CHECKLIST-V15-15',
+    versao:data?.versao||'v15.15',
     placa:data?.placa||placaNorm($('placa')?.value||''),
     osRef:data?.osRef||($('osRef')?.value||'').trim(),
     osId:data?.osId||state.osSelecionada?.id||'',
@@ -1041,7 +1134,7 @@ function bind(){
   $('buscaItem')?.addEventListener('input',renderSections);
   $('fotoGeral')?.addEventListener('change',e=>addPhotosToArray(e.target.files,state.generalPhotos,()=>{renderPhotos(); toast('Fotos gerais adicionadas.');}));
   $('btnDitarRelato')?.addEventListener('click',dictateRelato); $('btnAudio')?.addEventListener('click',toggleAudio);
-  $('btnSalvar')?.addEventListener('click',saveChecklist); $('btnPDF')?.addEventListener('click',()=>gerarPDF()); $('btnXLSX')?.addEventListener('click',()=>gerarXLSX('checklist')); $('btnA4')?.addEventListener('click',()=>printA4(false)); $('btnA4Topo')?.addEventListener('click',()=>printA4(false)); $('btnJSON')?.addEventListener('click',baixarJSON); $('btnAnexarOS')?.addEventListener('click',()=>anexarOS(false));
+  $('btnSalvar')?.addEventListener('click',saveChecklist); $('btnPDF')?.addEventListener('click',()=>gerarPDF()); $('btnPDFOrcamento')?.addEventListener('click',gerarPDFOrcamento); $('btnXLSX')?.addEventListener('click',()=>gerarXLSX('checklist')); $('btnA4')?.addEventListener('click',()=>printA4(false)); $('btnA4Topo')?.addEventListener('click',()=>printA4(false)); $('btnJSON')?.addEventListener('click',baixarJSON); $('btnAnexarOS')?.addEventListener('click',()=>anexarOS(false));
   $('btnEditarAtual')?.addEventListener('click',()=>go('screenChecklist')); $('btnExcluirAtual')?.addEventListener('click',deleteCurrentChecklist);
   $('btnEntrega')?.addEventListener('click',abrirEntrega); $('btnSalvarEntrega')?.addEventListener('click',saveEntrega); $('btnPdfEntrega')?.addEventListener('click',gerarPDFEntrega); $('btnXlsxEntrega')?.addEventListener('click',()=>gerarXLSX('entrega')); $('btnVoltarResumo')?.addEventListener('click',()=>go('screenResumo')); $('btnA4Entrega')?.addEventListener('click',()=>printA4(true)); $('btnAnexarEntrega')?.addEventListener('click',()=>anexarOS(true));
   $('btnFecharGestao')?.addEventListener('click',()=>$('modalGestao').classList.add('hidden'));

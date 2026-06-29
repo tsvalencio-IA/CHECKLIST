@@ -1,8 +1,8 @@
 {
-  "name": "oficin-ia-checklist-v15-14-tecnico-entrega-fotos",
-  "version": "15.14.0",
+  "name": "oficin-ia-checklist-v15-15-modelo-cotacao-posicoes",
+  "version": "15.15.0",
   "private": true,
-  "description": "OFICIN-IA Checklist separado para GitHub Pages com APK próprio, busca e seleção de O.S. pela placa, CRUD e PDF premium.",
+  "description": "OFICIN-IA Checklist com modelo expandido por posições, cotação de peças, serviços/consertos e PDF de orçamento.",
   "scripts": {
     "prepare:apk": "node scripts/prepare-apk.js",
     "android:icons": "node scripts/generate-android-icons.js",
