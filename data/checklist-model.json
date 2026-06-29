@@ -1,6 +1,6 @@
 {
-  "versao": "v15.16-cotacao-visual-posicoes",
-  "origem": "OFICIN-IA Checklist V15.15: modelo expandido para cotação/orçamento com posições por porta/vidro, sensor de nível de combustível, forros de portas e componentes faltantes.",
+  "versao": "20260629-v15.18-cotacao-compacta-galeria-fotos",
+  "origem": "OFICIN-IA Checklist V15.18: cotação agrupada compacta, fotos por câmera/galeria e modelo ampliado por posição/lado.",
   "acoesPadrao": [
     {
       "id": "ok",
@@ -209,54 +209,6 @@
             "ok",
             "atencao",
             "limpar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": ""
-        },
-        {
-          "id": "paralamas",
-          "titulo": "Paralamas / parabarros",
-          "acoes": [
-            "ok",
-            "atencao",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": ""
-        },
-        {
-          "id": "grade_frontal",
-          "titulo": "Grade frontal / molduras externas",
-          "acoes": [
-            "ok",
-            "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": ""
-        },
-        {
-          "id": "soleiras_acabamentos",
-          "titulo": "Soleiras e acabamentos externos",
-          "acoes": [
-            "ok",
-            "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
-            "trocar",
-            "revisar",
             "na"
           ],
           "obrigatorio": false,
@@ -540,67 +492,63 @@
           "hint": ""
         },
         {
-          "id": "rolamento_roda_diant_esq",
+          "id": "rolamento_roda_de",
           "titulo": "Rolamento de roda dianteiro esquerdo",
           "acoes": [
             "ok",
             "atencao",
             "trocar",
-            "ajustar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "importante",
-          "hint": "Marque qual rolamento vai trocar/revisar/ajustar. Se o veículo usar conjunto, use “cubo com rolamento”."
+          "hint": ""
         },
         {
-          "id": "rolamento_roda_diant_dir",
+          "id": "rolamento_roda_dd",
           "titulo": "Rolamento de roda dianteiro direito",
           "acoes": [
             "ok",
             "atencao",
             "trocar",
-            "ajustar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "importante",
-          "hint": "Marque qual rolamento vai trocar/revisar/ajustar. Se o veículo usar conjunto, use “cubo com rolamento”."
+          "hint": ""
         },
         {
-          "id": "rolamento_roda_tras_esq",
+          "id": "rolamento_roda_te",
           "titulo": "Rolamento de roda traseiro esquerdo",
           "acoes": [
             "ok",
             "atencao",
             "trocar",
-            "ajustar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "importante",
-          "hint": "Marque qual rolamento vai trocar/revisar/ajustar. Se o veículo usar conjunto, use “cubo com rolamento”."
+          "hint": ""
         },
         {
-          "id": "rolamento_roda_tras_dir",
+          "id": "rolamento_roda_td",
           "titulo": "Rolamento de roda traseiro direito",
           "acoes": [
             "ok",
             "atencao",
             "trocar",
-            "ajustar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "importante",
-          "hint": "Marque qual rolamento vai trocar/revisar/ajustar. Se o veículo usar conjunto, use “cubo com rolamento”."
+          "hint": ""
         },
         {
-          "id": "cubo_rolamento_diant_esq",
+          "id": "cubo_rolamento_de",
           "titulo": "Cubo com rolamento dianteiro esquerdo",
           "acoes": [
             "ok",
@@ -609,12 +557,12 @@
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "importante",
-          "hint": "Use quando a peça correta para cotação for o conjunto cubo + rolamento."
+          "hint": ""
         },
         {
-          "id": "cubo_rolamento_diant_dir",
+          "id": "cubo_rolamento_dd",
           "titulo": "Cubo com rolamento dianteiro direito",
           "acoes": [
             "ok",
@@ -623,12 +571,12 @@
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "importante",
-          "hint": "Use quando a peça correta para cotação for o conjunto cubo + rolamento."
+          "hint": ""
         },
         {
-          "id": "cubo_rolamento_tras_esq",
+          "id": "cubo_rolamento_te",
           "titulo": "Cubo com rolamento traseiro esquerdo",
           "acoes": [
             "ok",
@@ -637,12 +585,12 @@
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "importante",
-          "hint": "Use quando a peça correta para cotação for o conjunto cubo + rolamento."
+          "hint": ""
         },
         {
-          "id": "cubo_rolamento_tras_dir",
+          "id": "cubo_rolamento_td",
           "titulo": "Cubo com rolamento traseiro direito",
           "acoes": [
             "ok",
@@ -651,9 +599,9 @@
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "importante",
-          "hint": "Use quando a peça correta para cotação for o conjunto cubo + rolamento."
+          "hint": ""
         },
         {
           "id": "alinhamento_balanceamento",
@@ -1030,9 +978,9 @@
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "importante",
-          "hint": "Essencial quando o marcador de combustível oscila ou não marca."
+          "hint": ""
         },
         {
           "id": "flange_bomba_combustivel",
@@ -1044,22 +992,21 @@
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "importante",
-          "hint": "Inclui anel de vedação quando houver vazamento/cheiro de combustível."
+          "hint": ""
         },
         {
-          "id": "anel_vedacao_bomba",
-          "titulo": "Anel de vedação da flange/bomba de combustível",
+          "id": "anel_flange_bomba",
+          "titulo": "Anel de vedação da flange/bomba",
           "acoes": [
             "ok",
             "atencao",
             "trocar",
-            "revisar",
             "na"
           ],
-          "obrigatorio": false,
-          "criticidade": "importante",
+          "obrigatorio": true,
+          "criticidade": "normal",
           "hint": ""
         },
         {
@@ -1069,16 +1016,16 @@
             "ok",
             "atencao",
             "trocar",
-            "revisar",
+            "limpar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "regulador_pressao_combustivel",
-          "titulo": "Regulador de pressão de combustível",
+          "id": "regulador_pressao",
+          "titulo": "Regulador de pressão",
           "acoes": [
             "ok",
             "atencao",
@@ -1086,8 +1033,8 @@
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
-          "criticidade": "importante",
+          "obrigatorio": true,
+          "criticidade": "normal",
           "hint": ""
         },
         {
@@ -1096,17 +1043,18 @@
           "acoes": [
             "ok",
             "atencao",
+            "limpar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
-          "criticidade": "importante",
+          "obrigatorio": true,
+          "criticidade": "normal",
           "hint": ""
         },
         {
           "id": "sensor_tps",
-          "titulo": "Sensor TPS / posição da borboleta",
+          "titulo": "Sensor TPS",
           "acoes": [
             "ok",
             "atencao",
@@ -1114,12 +1062,12 @@
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "atuador_marcha_lenta",
+          "id": "atuador_lenta",
           "titulo": "Atuador de marcha lenta",
           "acoes": [
             "ok",
@@ -1129,7 +1077,7 @@
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
@@ -1143,8 +1091,8 @@
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
-          "criticidade": "critico",
+          "obrigatorio": true,
+          "criticidade": "normal",
           "hint": ""
         },
         {
@@ -1157,8 +1105,8 @@
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
-          "criticidade": "importante",
+          "obrigatorio": true,
+          "criticidade": "normal",
           "hint": ""
         }
       ]
@@ -1508,62 +1456,6 @@
           "obrigatorio": false,
           "criticidade": "normal",
           "hint": ""
-        },
-        {
-          "id": "painel_instrumentos",
-          "titulo": "Painel de instrumentos / cluster",
-          "acoes": [
-            "ok",
-            "atencao",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "importante",
-          "hint": ""
-        },
-        {
-          "id": "marcador_combustivel_painel",
-          "titulo": "Marcador de combustível no painel",
-          "acoes": [
-            "ok",
-            "atencao",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "importante",
-          "hint": "Usar junto com sensor de nível/boia quando houver falha de marcação."
-        },
-        {
-          "id": "chave_comutador_ignicao",
-          "titulo": "Chave/comutador de ignição",
-          "acoes": [
-            "ok",
-            "atencao",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "importante",
-          "hint": ""
-        },
-        {
-          "id": "tomada_12v_usb",
-          "titulo": "Tomada 12V / USB / acendedor",
-          "acoes": [
-            "ok",
-            "atencao",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": ""
         }
       ]
     },
@@ -1662,7 +1554,7 @@
     {
       "id": "portas_borrachas",
       "emoji": "🚪",
-      "titulo": "Portas, fechaduras, limitadores, forros e borrachas",
+      "titulo": "Portas, fechaduras, limitadores e borrachas",
       "hint": "Limitador/Freio de porta é item técnico separado. Regular, lubrificar e trocar continuam sendo ações.",
       "itens": [
         {
@@ -1672,7 +1564,6 @@
             "ok",
             "atencao",
             "regular",
-            "ajustar",
             "lubrificar",
             "trocar",
             "revisar",
@@ -1684,11 +1575,122 @@
         },
         {
           "id": "fechadura_passageiro",
-          "titulo": "Fechadura porta passageiro",
+          "titulo": "Fechadura porta passageiro dianteiro",
           "acoes": [
             "ok",
             "atencao",
             "regular",
+            "lubrificar",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "fechadura_te",
+          "titulo": "Fechadura porta traseira esquerda",
+          "acoes": [
+            "ok",
+            "atencao",
+            "regular",
+            "lubrificar",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "fechadura_td",
+          "titulo": "Fechadura porta traseira direita",
+          "acoes": [
+            "ok",
+            "atencao",
+            "regular",
+            "lubrificar",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "dobradica_de",
+          "titulo": "Dobradiça porta dianteira esquerda",
+          "acoes": [
+            "ok",
+            "atencao",
+            "regular",
+            "lubrificar",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "dobradica_dd",
+          "titulo": "Dobradiça porta dianteira direita",
+          "acoes": [
+            "ok",
+            "atencao",
+            "regular",
+            "lubrificar",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "dobradica_te",
+          "titulo": "Dobradiça porta traseira esquerda",
+          "acoes": [
+            "ok",
+            "atencao",
+            "regular",
+            "lubrificar",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "dobradica_td",
+          "titulo": "Dobradiça porta traseira direita",
+          "acoes": [
+            "ok",
+            "atencao",
+            "regular",
+            "lubrificar",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "limitador_de",
+          "titulo": "Limitador/freio porta dianteira esquerda",
+          "acoes": [
+            "ok",
+            "atencao",
             "ajustar",
             "lubrificar",
             "trocar",
@@ -1700,390 +1702,193 @@
           "hint": ""
         },
         {
-          "id": "fechadura_tras_esq",
-          "titulo": "Fechadura porta traseira esquerda",
-          "acoes": [
-            "ok",
-            "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": "Marque N/A se não possuir."
-        },
-        {
-          "id": "fechadura_tras_dir",
-          "titulo": "Fechadura porta traseira direita",
-          "acoes": [
-            "ok",
-            "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": "Marque N/A se não possuir."
-        },
-        {
-          "id": "dobradica_diant_esq",
-          "titulo": "Dobradiça porta dianteira esquerda",
-          "acoes": [
-            "ok",
-            "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": ""
-        },
-        {
-          "id": "dobradica_diant_dir",
-          "titulo": "Dobradiça porta dianteira direita",
-          "acoes": [
-            "ok",
-            "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": ""
-        },
-        {
-          "id": "dobradica_tras_esq",
-          "titulo": "Dobradiça porta traseira esquerda",
-          "acoes": [
-            "ok",
-            "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": ""
-        },
-        {
-          "id": "dobradica_tras_dir",
-          "titulo": "Dobradiça porta traseira direita",
-          "acoes": [
-            "ok",
-            "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": ""
-        },
-        {
-          "id": "limitador_diant_esq",
-          "titulo": "Limitador/freio porta dianteira esquerda",
-          "acoes": [
-            "ok",
-            "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": ""
-        },
-        {
-          "id": "limitador_diant_dir",
+          "id": "limitador_dd",
           "titulo": "Limitador/freio porta dianteira direita",
           "acoes": [
             "ok",
             "atencao",
-            "regular",
             "ajustar",
             "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "limitador_tras_esq",
+          "id": "limitador_te",
           "titulo": "Limitador/freio porta traseira esquerda",
           "acoes": [
             "ok",
             "atencao",
-            "regular",
             "ajustar",
             "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "limitador_tras_dir",
+          "id": "limitador_td",
           "titulo": "Limitador/freio porta traseira direita",
           "acoes": [
             "ok",
             "atencao",
-            "regular",
             "ajustar",
             "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "macaneta_ext_motorista",
-          "titulo": "Maçaneta externa motorista",
-          "acoes": [
-            "ok",
-            "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": ""
-        },
-        {
-          "id": "macaneta_ext_passageiro",
-          "titulo": "Maçaneta externa passageiro",
-          "acoes": [
-            "ok",
-            "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": ""
-        },
-        {
-          "id": "macaneta_int_motorista",
-          "titulo": "Maçaneta interna motorista",
-          "acoes": [
-            "ok",
-            "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": ""
-        },
-        {
-          "id": "macaneta_int_passageiro",
-          "titulo": "Maçaneta interna passageiro",
-          "acoes": [
-            "ok",
-            "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": ""
-        },
-        {
-          "id": "forro_porta_motorista",
+          "id": "forro_porta_mot",
           "titulo": "Forro porta motorista",
           "acoes": [
             "ok",
             "atencao",
-            "regular",
             "ajustar",
-            "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
-          "hint": "Acabamento interno, presilhas, parafusos e encaixes."
+          "hint": ""
         },
         {
-          "id": "forro_porta_passageiro",
+          "id": "forro_porta_pass",
           "titulo": "Forro porta passageiro dianteiro",
           "acoes": [
             "ok",
             "atencao",
-            "regular",
             "ajustar",
-            "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "forro_porta_tras_esq",
+          "id": "forro_porta_te",
           "titulo": "Forro porta traseira esquerda",
           "acoes": [
             "ok",
             "atencao",
-            "regular",
             "ajustar",
-            "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "forro_porta_tras_dir",
+          "id": "forro_porta_td",
           "titulo": "Forro porta traseira direita",
           "acoes": [
             "ok",
             "atencao",
-            "regular",
             "ajustar",
-            "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "presilhas_forro_porta",
+          "id": "presilhas_forro",
           "titulo": "Presilhas/grampos dos forros de porta",
           "acoes": [
             "ok",
             "atencao",
             "trocar",
-            "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "borracha_diant_esq",
+          "id": "borracha_porta_de",
           "titulo": "Borracha/vedação porta dianteira esquerda",
           "acoes": [
             "ok",
             "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
             "trocar",
-            "revisar",
+            "ajustar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "borracha_diant_dir",
+          "id": "borracha_porta_dd",
           "titulo": "Borracha/vedação porta dianteira direita",
           "acoes": [
             "ok",
             "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
             "trocar",
-            "revisar",
+            "ajustar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "borracha_tras_esq",
+          "id": "borracha_porta_te",
           "titulo": "Borracha/vedação porta traseira esquerda",
           "acoes": [
             "ok",
             "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
             "trocar",
-            "revisar",
+            "ajustar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "borracha_tras_dir",
+          "id": "borracha_porta_td",
           "titulo": "Borracha/vedação porta traseira direita",
           "acoes": [
             "ok",
             "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
             "trocar",
-            "revisar",
+            "ajustar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "macanetas",
+          "titulo": "Maçanetas internas/externas",
+          "acoes": [
+            "ok",
+            "atencao",
+            "ajustar",
+            "trocar",
+            "na"
+          ],
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
@@ -2094,31 +1899,27 @@
             "ok",
             "atencao",
             "regular",
-            "ajustar",
             "lubrificar",
             "trocar",
-            "revisar",
             "na"
           ],
-          "obrigatorio": false,
-          "criticidade": "importante",
+          "obrigatorio": true,
+          "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "cabo_abertura_capo",
+          "id": "cabo_capo",
           "titulo": "Cabo/alavanca de abertura do capô",
           "acoes": [
             "ok",
             "atencao",
-            "regular",
             "ajustar",
-            "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
-          "criticidade": "importante",
+          "obrigatorio": true,
+          "criticidade": "normal",
           "hint": ""
         },
         {
@@ -2128,18 +1929,16 @@
             "ok",
             "atencao",
             "regular",
-            "ajustar",
             "lubrificar",
             "trocar",
-            "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "amortecedor_tampa_porta_malas",
+          "id": "amortecedor_tampa_traseira",
           "titulo": "Amortecedores da tampa traseira/porta-malas",
           "acoes": [
             "ok",
@@ -2148,7 +1947,7 @@
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         }
@@ -2157,17 +1956,16 @@
     {
       "id": "vidros_palhetas",
       "emoji": "🪟",
-      "titulo": "Vidros, máquinas, botões, limpadores e comandos",
-      "hint": "Itens separados por posição para facilitar cotação: dianteiro esquerdo/direito, traseiro esquerdo/direito e componentes associados.",
+      "titulo": "Vidros, limpadores e comandos",
+      "hint": "Itens de conforto e segurança em chuva.",
       "itens": [
         {
-          "id": "vidro_porta_diant_esq",
+          "id": "vidro_porta_de",
           "titulo": "Vidro porta dianteira esquerda",
           "acoes": [
             "ok",
             "atencao",
             "regular",
-            "ajustar",
             "lubrificar",
             "trocar",
             "revisar",
@@ -2175,16 +1973,15 @@
           ],
           "obrigatorio": true,
           "criticidade": "normal",
-          "hint": "Selecione a ação da posição exata: revisar, regular, lubrificar, trocar ou N/A."
+          "hint": ""
         },
         {
-          "id": "vidro_porta_diant_dir",
+          "id": "vidro_porta_dd",
           "titulo": "Vidro porta dianteira direita",
           "acoes": [
             "ok",
             "atencao",
             "regular",
-            "ajustar",
             "lubrificar",
             "trocar",
             "revisar",
@@ -2195,121 +1992,113 @@
           "hint": ""
         },
         {
-          "id": "vidro_porta_tras_esq",
+          "id": "vidro_porta_te",
           "titulo": "Vidro porta traseira esquerda",
           "acoes": [
             "ok",
             "atencao",
             "regular",
-            "ajustar",
             "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
-          "hint": "Marque N/A se o veículo não possuir vidro traseiro/porta traseira."
+          "hint": ""
         },
         {
-          "id": "vidro_porta_tras_dir",
+          "id": "vidro_porta_td",
           "titulo": "Vidro porta traseira direita",
           "acoes": [
             "ok",
             "atencao",
             "regular",
-            "ajustar",
             "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
-          "hint": "Marque N/A se o veículo não possuir vidro traseiro/porta traseira."
+          "hint": ""
         },
         {
-          "id": "maquina_vidro_diant_esq",
+          "id": "maquina_vidro_de",
           "titulo": "Máquina/motor vidro dianteiro esquerdo",
           "acoes": [
             "ok",
             "atencao",
             "regular",
-            "ajustar",
             "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "maquina_vidro_diant_dir",
+          "id": "maquina_vidro_dd",
           "titulo": "Máquina/motor vidro dianteiro direito",
           "acoes": [
             "ok",
             "atencao",
             "regular",
-            "ajustar",
             "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "maquina_vidro_tras_esq",
+          "id": "maquina_vidro_te",
           "titulo": "Máquina/motor vidro traseiro esquerdo",
           "acoes": [
             "ok",
             "atencao",
             "regular",
-            "ajustar",
             "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "maquina_vidro_tras_dir",
+          "id": "maquina_vidro_td",
           "titulo": "Máquina/motor vidro traseiro direito",
           "acoes": [
             "ok",
             "atencao",
             "regular",
-            "ajustar",
             "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
           "id": "botao_vidro_motorista",
-          "titulo": "Botão/comando vidro motorista",
+          "titulo": "Botão vidro motorista",
           "acoes": [
             "ok",
             "atencao",
-            "regular",
             "ajustar",
-            "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
@@ -2319,79 +2108,73 @@
           "acoes": [
             "ok",
             "atencao",
-            "regular",
             "ajustar",
-            "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "botao_vidro_tras_esq",
+          "id": "botao_vidro_te",
           "titulo": "Botão vidro traseiro esquerdo",
           "acoes": [
             "ok",
             "atencao",
-            "regular",
             "ajustar",
-            "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "botao_vidro_tras_dir",
+          "id": "botao_vidro_td",
           "titulo": "Botão vidro traseiro direito",
           "acoes": [
             "ok",
             "atencao",
-            "regular",
             "ajustar",
-            "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "canaletas_vidro",
+          "id": "canaletas_vidros",
           "titulo": "Canaletas dos vidros",
           "acoes": [
             "ok",
             "atencao",
-            "regular",
-            "ajustar",
+            "limpar",
             "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "pestanas_vidro",
+          "id": "pestanas_vidros",
           "titulo": "Pestanas/borrachas externas dos vidros",
           "acoes": [
             "ok",
             "atencao",
+            "ajustar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
@@ -2401,20 +2184,31 @@
           "acoes": [
             "ok",
             "atencao",
-            "regular",
             "ajustar",
-            "lubrificar",
             "trocar",
-            "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "palhetas_dianteiras",
-          "titulo": "Palhetas limpador dianteiras",
+          "id": "palhetas",
+          "titulo": "Palhetas limpador",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "limpar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": ""
+        },
+        {
+          "id": "esguicho",
+          "titulo": "Esguicho e reservatório limpador",
           "acoes": [
             "ok",
             "atencao",
@@ -2424,79 +2218,20 @@
             "na"
           ],
           "obrigatorio": true,
-          "criticidade": "importante",
-          "hint": ""
-        },
-        {
-          "id": "palheta_traseira",
-          "titulo": "Palheta limpador traseira",
-          "acoes": [
-            "ok",
-            "atencao",
-            "limpar",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": "Marque N/A se não possuir."
-        },
-        {
-          "id": "esguicho_dianteiro",
-          "titulo": "Esguicho limpador dianteiro",
-          "acoes": [
-            "ok",
-            "atencao",
-            "limpar",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
           "criticidade": "normal",
           "hint": ""
         },
         {
-          "id": "esguicho_traseiro",
-          "titulo": "Esguicho limpador traseiro",
-          "acoes": [
-            "ok",
-            "atencao",
-            "limpar",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": ""
-        },
-        {
-          "id": "reservatorio_limpador",
-          "titulo": "Reservatório/mangueiras do limpador",
-          "acoes": [
-            "ok",
-            "atencao",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": ""
-        },
-        {
-          "id": "desembacador_traseiro",
+          "id": "desembacador",
           "titulo": "Desembaçador traseiro",
           "acoes": [
             "ok",
             "atencao",
-            "trocar",
             "revisar",
+            "trocar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         }
@@ -2658,19 +2393,72 @@
           "hint": ""
         },
         {
-          "id": "acabamento_painel",
-          "titulo": "Acabamentos do painel",
+          "id": "painel_cluster",
+          "titulo": "Painel de instrumentos / cluster",
           "acoes": [
             "ok",
             "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "marcador_combustivel",
+          "titulo": "Marcador de combustível no painel",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "comutador_ignicao",
+          "titulo": "Chave/comutador de ignição",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "tomada_12v_usb",
+          "titulo": "Tomada 12V / USB",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "acabamentos_painel",
+          "titulo": "Acabamentos do painel",
+          "acoes": [
+            "ok",
+            "atencao",
+            "ajustar",
+            "trocar",
+            "na"
+          ],
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
@@ -2680,29 +2468,26 @@
           "acoes": [
             "ok",
             "atencao",
-            "regular",
-            "ajustar",
-            "lubrificar",
-            "trocar",
-            "revisar",
-            "na"
-          ],
-          "obrigatorio": false,
-          "criticidade": "normal",
-          "hint": ""
-        },
-        {
-          "id": "carpete_asoalho",
-          "titulo": "Carpete/assoalho interno",
-          "acoes": [
-            "ok",
-            "atencao",
             "limpar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
+          "criticidade": "normal",
+          "hint": ""
+        },
+        {
+          "id": "carpete_assoalho",
+          "titulo": "Carpete/assoalho",
+          "acoes": [
+            "ok",
+            "atencao",
+            "limpar",
+            "trocar",
+            "na"
+          ],
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         },
@@ -2712,14 +2497,12 @@
           "acoes": [
             "ok",
             "atencao",
-            "regular",
             "ajustar",
-            "lubrificar",
             "trocar",
             "revisar",
             "na"
           ],
-          "obrigatorio": false,
+          "obrigatorio": true,
           "criticidade": "normal",
           "hint": ""
         }
