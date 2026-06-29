@@ -1,5 +1,5 @@
 {
-  "versao": "20260629-v15.15-modelo-pecas-servicos-posicoes",
+  "versao": "v15.16-cotacao-visual-posicoes",
   "origem": "OFICIN-IA Checklist V15.15: modelo expandido para cotação/orçamento com posições por porta/vidro, sensor de nível de combustível, forros de portas e componentes faltantes.",
   "acoesPadrao": [
     {
@@ -540,8 +540,68 @@
           "hint": ""
         },
         {
-          "id": "rolamentos_roda",
-          "titulo": "Rolamentos de roda",
+          "id": "rolamento_roda_diant_esq",
+          "titulo": "Rolamento de roda dianteiro esquerdo",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "ajustar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": "Marque qual rolamento vai trocar/revisar/ajustar. Se o veículo usar conjunto, use “cubo com rolamento”."
+        },
+        {
+          "id": "rolamento_roda_diant_dir",
+          "titulo": "Rolamento de roda dianteiro direito",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "ajustar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": "Marque qual rolamento vai trocar/revisar/ajustar. Se o veículo usar conjunto, use “cubo com rolamento”."
+        },
+        {
+          "id": "rolamento_roda_tras_esq",
+          "titulo": "Rolamento de roda traseiro esquerdo",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "ajustar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": "Marque qual rolamento vai trocar/revisar/ajustar. Se o veículo usar conjunto, use “cubo com rolamento”."
+        },
+        {
+          "id": "rolamento_roda_tras_dir",
+          "titulo": "Rolamento de roda traseiro direito",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "ajustar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": "Marque qual rolamento vai trocar/revisar/ajustar. Se o veículo usar conjunto, use “cubo com rolamento”."
+        },
+        {
+          "id": "cubo_rolamento_diant_esq",
+          "titulo": "Cubo com rolamento dianteiro esquerdo",
           "acoes": [
             "ok",
             "atencao",
@@ -551,7 +611,49 @@
           ],
           "obrigatorio": false,
           "criticidade": "importante",
-          "hint": ""
+          "hint": "Use quando a peça correta para cotação for o conjunto cubo + rolamento."
+        },
+        {
+          "id": "cubo_rolamento_diant_dir",
+          "titulo": "Cubo com rolamento dianteiro direito",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": "Use quando a peça correta para cotação for o conjunto cubo + rolamento."
+        },
+        {
+          "id": "cubo_rolamento_tras_esq",
+          "titulo": "Cubo com rolamento traseiro esquerdo",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": "Use quando a peça correta para cotação for o conjunto cubo + rolamento."
+        },
+        {
+          "id": "cubo_rolamento_tras_dir",
+          "titulo": "Cubo com rolamento traseiro direito",
+          "acoes": [
+            "ok",
+            "atencao",
+            "trocar",
+            "revisar",
+            "na"
+          ],
+          "obrigatorio": false,
+          "criticidade": "importante",
+          "hint": "Use quando a peça correta para cotação for o conjunto cubo + rolamento."
         },
         {
           "id": "alinhamento_balanceamento",

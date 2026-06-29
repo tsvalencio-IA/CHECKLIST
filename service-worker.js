@@ -1,5 +1,5 @@
 'use strict';
-const CACHE_NAME = 'oficin-ia-checklist-v15.15.0-modelo-cotacao-posicoes';
+const CACHE_NAME = 'oficin-ia-checklist-v15.16.0-cotacao-visual-posicoes';
 const CORE = [
   './', './index.html', './checklist.html', './login.html', './manifest.webmanifest',
   './js/config.js', './js/checklist.js', './data/checklist-model.json',

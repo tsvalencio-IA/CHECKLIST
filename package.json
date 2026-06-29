@@ -1,8 +1,8 @@
 {
-  "name": "oficin-ia-checklist-v15-15-modelo-cotacao-posicoes",
-  "version": "15.15.0",
+  "name": "oficin-ia-checklist-v15-16-cotacao-visual-posicoes",
+  "version": "15.16.0",
   "private": true,
-  "description": "OFICIN-IA Checklist com modelo expandido por posições, cotação de peças, serviços/consertos e PDF de orçamento.",
+  "description": "OFICIN-IA Checklist com cotação visual por quantidade/posição, peças separadas, serviços/consertos e PDF de orçamento claro.",
   "scripts": {
     "prepare:apk": "node scripts/prepare-apk.js",
     "android:icons": "node scripts/generate-android-icons.js",
