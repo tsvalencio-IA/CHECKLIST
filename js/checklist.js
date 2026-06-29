@@ -6,7 +6,7 @@ const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 const APP = window.CHECKLIST_APP || {};
 const SESSION_KEY = 'OFICINIA_CHECKLIST_V15_SESSION';
 const DRAFT_KEY = 'OFICINIA_CHECKLIST_V15_DRAFT';
-const MODEL_KEY = 'OFICINIA_CHECKLIST_V15_15_MODEL';
+const MODEL_KEY = 'OFICINIA_CHECKLIST_V15_17_MODEL';
 const THEME_KEY = 'OFICINIA_CHECKLIST_V15_THEME';
 const DEFAULT_BRAND = { name:'Checklist Inteligente OFICIN-IA', subtitle:'App separado • APK próprio • mesmo Firebase', color:'#2563eb', footer:'Powered by thIAguinho Soluções Digitais' };
 const ACTIONS_FINAL = new Set(['atencao','trocar','retificar','regular','ajustar','lubrificar','limpar','revisar']);
@@ -388,6 +388,7 @@ function renderSections(){
   $$('[data-quote-field]').forEach(el=>el.addEventListener(el.tagName==='SELECT'?'change':'input',()=>updateQuoteField(el.dataset.quoteItem,el.dataset.quoteField,el.value)));
   $$('[data-dictate]').forEach(b=>b.addEventListener('click',()=>dictateToItem(b.dataset.dictate)));
   $$('[data-photo-item]').forEach(inp=>inp.addEventListener('change',e=>addItemPhotos(inp.dataset.photoItem,e.target.files)));
+  $$('[data-photo-item-gallery]').forEach(inp=>inp.addEventListener('change',e=>addItemPhotos(inp.dataset.photoItemGallery,e.target.files)));
 }
 
 function cotacaoPrecisa(acao){ return ['trocar','atencao','revisar','retificar','regular','ajustar','lubrificar','limpar'].includes(String(acao||'')); }
@@ -439,7 +440,7 @@ function renderQuotePanel(it,ans){
   const q={...cotacaoDefault(it,ans.acao), ...(ans.cotacao||{})};
   const positions=['','Dianteiro esquerdo','Dianteiro direito','Traseiro esquerdo','Traseiro direito','Dianteiro','Traseiro','Esquerdo','Direito','Motorista','Passageiro','Conjunto/Kit'];
   const tipos=['PEÇA','SERVIÇO','PEÇA + SERVIÇO','AVALIAR'];
-  return `<div class="quote-panel"><b>🧾 Cotação/orçamento deste item</b><small>Preencha para o relatório mostrar quantidade, posição e peça correta sem confusão.</small><div class="quote-grid"><div><label>Qtd.</label><input class="inp" data-quote-field="qtd" data-quote-item="${esc(it.id)}" type="number" min="0" step="1" value="${esc(q.qtd)}" placeholder="1"></div><div><label>Peça/serviço exato</label><input class="inp" data-quote-field="peca" data-quote-item="${esc(it.id)}" value="${esc(q.peca)}" placeholder="Ex: cubo com rolamento"></div><div><label>Posição/lado</label><select class="inp" data-quote-field="posicao" data-quote-item="${esc(it.id)}">${positions.map(p=>`<option value="${esc(p)}" ${String(q.posicao||'')===p?'selected':''}>${p||'Não informado'}</option>`).join('')}</select></div><div><label>Vai para</label><select class="inp" data-quote-field="tipo" data-quote-item="${esc(it.id)}">${tipos.map(t=>`<option value="${esc(t)}" ${String(q.tipo||'')===t?'selected':''}>${t}</option>`).join('')}</select></div></div></div>`;
+  return `<div class="quote-panel"><b>🧾 Peça/serviço para cotação</b><small>Confirme quantidade, peça exata e lado. O resumo agrupa automaticamente por peça para não ficar jogado.</small><div class="quote-grid"><div><label>Qtd.</label><input class="inp" data-quote-field="qtd" data-quote-item="${esc(it.id)}" type="number" min="0" step="1" value="${esc(q.qtd)}" placeholder="1"></div><div><label>Peça/serviço exato</label><input class="inp" data-quote-field="peca" data-quote-item="${esc(it.id)}" value="${esc(q.peca)}" placeholder="Ex: cubo com rolamento"></div><div><label>Posição/lado</label><select class="inp" data-quote-field="posicao" data-quote-item="${esc(it.id)}">${positions.map(p=>`<option value="${esc(p)}" ${String(q.posicao||'')===p?'selected':''}>${p||'Não informado'}</option>`).join('')}</select></div><div><label>Vai para</label><select class="inp" data-quote-field="tipo" data-quote-item="${esc(it.id)}">${tipos.map(t=>`<option value="${esc(t)}" ${String(q.tipo||'')===t?'selected':''}>${t}</option>`).join('')}</select></div></div></div>`;
 }
 function updateQuoteField(itemId,field,value){ const q=ensureCotacao(itemId); q[field]=value; saveDraft(); renderProgress(); }
 
@@ -451,7 +452,7 @@ function renderItem(sec,it){
   return `<div class="item ${ans.acao?'has-action':''}" data-item-box="${esc(it.id)}">
     <div class="item-top"><div><div class="item-title">${esc(it.titulo)}</div>${it.hint?`<div class="item-hint">${esc(it.hint)}</div>`:''}<div class="badges">${req}${crit}</div></div><span class="pill ${actionInfo(ans.acao).classe||''}">${ans.acao?esc(actionInfo(ans.acao).emoji+' '+actionInfo(ans.acao).label):'Pendente'}</span></div>
     <div class="action-chips">${(it.acoes||['ok','atencao','trocar','na']).map(a=>{const ai=actionInfo(a); return `<button class="chip ${esc(ai.classe)} ${ans.acao===a?'on':''}" data-action="${esc(a)}" data-item="${esc(it.id)}" type="button">${esc(ai.emoji)} ${esc(ai.label)}</button>`}).join('')}</div>
-    <div class="item-extra">${renderQuotePanel(it,ans)}<textarea data-obs="${esc(it.id)}" placeholder="Observação rápida deste item...">${esc(ans.obs||'')}</textarea><div class="micro-actions"><button class="btn secondary small" data-dictate="${esc(it.id)}" type="button">🗣️ Ditar obs.</button><label class="btn secondary small">📷 Foto do item<input data-photo-item="${esc(it.id)}" type="file" accept="image/*" capture="environment" multiple hidden></label></div>${photos.length?`<div class="photos">${photos.map(p=>`<img src="${esc(p)}" alt="foto">`).join('')}</div>`:''}</div>
+    <div class="item-extra">${renderQuotePanel(it,ans)}<textarea data-obs="${esc(it.id)}" placeholder="Observação rápida deste item...">${esc(ans.obs||'')}</textarea><div class="micro-actions"><button class="btn secondary small" data-dictate="${esc(it.id)}" type="button">🗣️ Ditar</button><label class="btn secondary small">📷 Câmera<input data-photo-item="${esc(it.id)}" type="file" accept="image/*" capture="environment" multiple hidden></label><label class="btn secondary small">🖼️ Galeria<input data-photo-item-gallery="${esc(it.id)}" type="file" accept="image/*" multiple hidden></label></div>${photos.length?`<div class="photos">${photos.map(p=>`<img src="${esc(p)}" alt="foto">`).join('')}</div>`:''}</div>
   </div>`;
 }
 function ensureAnswer(itemId){
@@ -539,7 +540,7 @@ function payloadBase(){
   const itens=Object.values(state.answers).map(a=>{ const fotos=state.itemPhotos[a.id]||[]; return {...a, fotos:fotos.length, fotoUrls:fotos, fotosUrls:fotos, criticidade:allItems[a.id]?.criticidade||'normal', obrigatorio:allItems[a.id]?.obrigatorio!==false}; });
   const osSel=state.osSelecionada||{}; const osRef=($('osRef')?.value||'').trim();
   const fotoUrls=[...(state.generalPhotos||[])]; const itemFotos=JSON.parse(JSON.stringify(state.itemPhotos||{}));
-  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15-16', versao:'v15.16', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef, osId:osSel.id||'', osColecao:osSel._col||'', osNumero:osSel.numero||osSel.codigo||osSel.osRef||osRef, osLabel:osSel.label||osRef, osStatus:osSel.status||osSel.etapa||'', osCliente:osSel.clienteNome||osSel.nomeCliente||osSel.cliente?.nome||'', osVeiculo:osSel.veiculoLabel||osSel.veiculoModelo||osSel.veiculo||osSel.veiculoSnapshot?.modelo||'', km:($('km')?.value||'').trim(), responsavel:tecnico, tecnicoChecklist:tecnico, tecnicoNome:tecnico, responsavelLogin:state.session?.name||'', responsavelPerfil:state.session?.role||'', verificadorEntrega:verificador, relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:fotoUrls.length, fotoUrls, fotosGeraisUrls:fotoUrls, itemPhotos:itemFotos, itemFotos, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
+  return { id:state.lastSavedId||uid(), app:'OFICIN-IA-CHECKLIST-V15-17', versao:'v15.17', tenantId:state.session?.tenantId||'', oficinaNome:state.session?.oficinaNome||'', placa, osRef, osId:osSel.id||'', osColecao:osSel._col||'', osNumero:osSel.numero||osSel.codigo||osSel.osRef||osRef, osLabel:osSel.label||osRef, osStatus:osSel.status||osSel.etapa||'', osCliente:osSel.clienteNome||osSel.nomeCliente||osSel.cliente?.nome||'', osVeiculo:osSel.veiculoLabel||osSel.veiculoModelo||osSel.veiculo||osSel.veiculoSnapshot?.modelo||'', km:($('km')?.value||'').trim(), responsavel:tecnico, tecnicoChecklist:tecnico, tecnicoNome:tecnico, responsavelLogin:state.session?.name||'', responsavelPerfil:state.session?.role||'', verificadorEntrega:verificador, relato:($('relato')?.value||'').trim(), diagnostico:($('diagnostico')?.value||'').trim(), itens, fotosGerais:fotoUrls.length, fotoUrls, fotosGeraisUrls:fotoUrls, itemPhotos:itemFotos, itemFotos, temAudio:!!state.audioUrl, stats:stats(), criadoEm:nowISO(), atualizadoEm:nowISO() };
 }
 async function saveChecklist(){
   if(!placaNorm($('placa')?.value||'')) { toast('Informe a placa antes de salvar.'); go('screenInicio'); return null; }
@@ -564,12 +565,62 @@ async function saveChecklist(){
   finally{ setBusy('btnSalvar',false); }
 }
 
+
+function pecaKey(v){ return norm(v||'').replace(/\b(ld|le|de|dd|te|td|dianteiro|dianteira|traseiro|traseira|esquerdo|esquerda|direito|direita|motorista|passageiro)\b/g,'').replace(/\s+/g,' ').trim(); }
+function posShort(p){
+  const n=norm(p||'');
+  if(n.includes('dianteiro esquerdo')) return 'DE';
+  if(n.includes('dianteiro direito')) return 'DD';
+  if(n.includes('traseiro esquerdo')) return 'TE';
+  if(n.includes('traseiro direito')) return 'TD';
+  if(n.includes('dianteiro')) return 'Dianteiro';
+  if(n.includes('traseiro')) return 'Traseiro';
+  if(n.includes('esquerdo')) return 'Esq.';
+  if(n.includes('direito')) return 'Dir.';
+  if(n.includes('motorista')) return 'Motorista';
+  if(n.includes('passageiro')) return 'Passageiro';
+  if(n.includes('conjunto')) return 'Kit';
+  return String(p||'Não informado');
+}
+function rowsPecasAgrupadas(base){
+  const groups=new Map();
+  rowsCotacaoPecas(base).forEach(r=>{
+    const peca=String(r.PecaSolicitada||r.Componente||'Peça não informada').trim();
+    const sistema=String(r.Sistema||'Geral').trim();
+    const key=pecaKey(peca)+'|'+norm(sistema);
+    if(!groups.has(key)) groups.set(key,{QuantidadeTotal:0,Peca:peca,Sistema:sistema,Posicoes:[],Acoes:new Set(),Observacoes:[],Fotos:0,LinksFotos:[],Itens:[]});
+    const g=groups.get(key);
+    const qtd=Number(r.Quantidade)||1; g.QuantidadeTotal+=qtd;
+    const pos=posShort(r.Posicao||''); if(pos && !g.Posicoes.includes(pos)) g.Posicoes.push(pos);
+    if(r.Acao) g.Acoes.add(r.Acao);
+    if(r.Motivo) g.Observacoes.push(`${pos && pos!=='Não informado'?pos+': ':''}${r.Motivo}`);
+    g.Fotos += Number(r.Fotos)||0;
+    String(r.LinksFotos||'').split(' | ').filter(Boolean).forEach(u=>{ if(!g.LinksFotos.includes(u)) g.LinksFotos.push(u); });
+    g.Itens.push(r);
+  });
+  return Array.from(groups.values()).map(g=>({
+    QuantidadeTotal:g.QuantidadeTotal,
+    Peca:g.Peca,
+    Sistema:g.Sistema,
+    Posicoes:g.Posicoes.join(', ') || 'Não informado',
+    Acoes:Array.from(g.Acoes).join(', '),
+    Observacoes:g.Observacoes.join(' | '),
+    Fotos:g.Fotos,
+    LinksFotos:g.LinksFotos.join(' | '),
+    Detalhes:g.Itens.map(r=>`${r.Quantidade||1}x ${posShort(r.Posicao||'')} ${r.Componente||r.PecaSolicitada||''}`.trim()).join(' ; ')
+  })).sort((a,b)=>String(a.Sistema).localeCompare(String(b.Sistema),'pt-BR') || String(a.Peca).localeCompare(String(b.Peca),'pt-BR'));
+}
+function fotosDeRows(rows){
+  const urls=[]; (rows||[]).forEach(r=>String(r.LinksFotos||'').split(' | ').filter(Boolean).forEach(u=>{ if(!urls.includes(u)) urls.push(u); })); return urls;
+}
+
 function resumoCotacao(base=payloadBase()){
   const pecas=rowsCotacaoPecas(base);
+  const pecasAgrupadas=rowsPecasAgrupadas(base);
   const servicos=rowsServicos(base);
   const avaliar=(base.itens||[]).filter(i=>['atencao','revisar'].includes(i.acao));
-  const qtdPecas=pecas.reduce((s,r)=>s+(Number(r.Quantidade)||0),0);
-  return {pecas, servicos, avaliar, qtdPecas, tiposPecas:pecas.length};
+  const qtdPecas=pecasAgrupadas.reduce((s,r)=>s+(Number(r.QuantidadeTotal)||0),0);
+  return {pecas, pecasAgrupadas, servicos, avaliar, qtdPecas, tiposPecas:pecasAgrupadas.length};
 }
 function renderResumo(){
   const box=$('resumoLista'); if(!box) return;
@@ -581,7 +632,7 @@ function renderResumo(){
   if($('btnExcluirAtual')) $('btnExcluirAtual').disabled = !state.lastSavedId || !isGestor();
   const modoEdicao = state.lastSavedId?`<div class="notice warn"><b>Modo edição:</b> este checklist já foi salvo. Se alterar e tocar em “Salvar alterações”, o registro ${esc(state.lastSavedId)} será atualizado.</div>`:'';
   const kpis = `<div class="quote-summary"><div class="quote-card"><b>${res.qtdPecas}</b><span>peça(s) para cotar/comprar</span></div><div class="quote-card"><b>${res.tiposPecas}</b><span>tipo(s) de peça</span></div><div class="quote-card"><b>${res.servicos.length}</b><span>serviço(s)/conserto(s)</span></div><div class="quote-card"><b>${res.avaliar.length}</b><span>itens para avaliar</span></div></div>`;
-  const pecasHtml = res.pecas.length ? res.pecas.map(r=>`<div class="res-line quote-line"><b>${esc(r.Quantidade||1)}x ${esc(r.PecaSolicitada||r.Componente)}</b><span class="pill bad">${esc(r.Acao)}</span><small>${esc(r.Sistema)}${r.Posicao?' • '+esc(r.Posicao):''}${r.Motivo?' • Obs.: '+esc(r.Motivo):''}</small></div>`).join('') : '<div class="notice">Nenhuma peça para compra/cotação. Itens OK e N/A não entram aqui.</div>';
+  const pecasHtml = res.pecasAgrupadas.length ? res.pecasAgrupadas.map(g=>`<div class="quote-group"><div class="quote-group-head"><div><div class="quote-group-title">${esc(g.QuantidadeTotal)}x ${esc(g.Peca)}</div><small>${esc(g.Sistema)} • Posições: ${esc(g.Posicoes)}</small></div><span class="pill bad">${esc(g.Acoes||'Trocar')}</span></div>${g.Observacoes?`<small>Obs.: ${esc(g.Observacoes)}</small>`:''}${g.Detalhes?`<details><summary>Ver detalhes (${g.Itens.length})</summary><small>${esc(g.Detalhes)}</small></details>`:''}${g.Fotos?`<small>📷 ${esc(g.Fotos)} foto(s) vinculada(s)</small>`:''}</div>`).join('') : '<div class="notice">Nenhuma peça para compra/cotação. Itens OK e N/A não entram aqui.</div>';
   const servHtml = res.servicos.length ? res.servicos.map(r=>`<div class="res-line quote-line"><b>${esc(r.ServicoOuComponente)}</b><span class="pill warn">${esc(r.Acao)}</span><small>${esc(r.Sistema)}${r.Posicao?' • '+esc(r.Posicao):''}${r.ObservacaoTecnica?' • Obs.: '+esc(r.ObservacaoTecnica):''}</small></div>`).join('') : '<div class="notice">Nenhum serviço/conserto separado.</div>';
   const tecnicoHtml = crit.length ? `<details class="tech-details"><summary>Ver lista técnica completa (${crit.length})</summary>${crit.map(i=>`<div class="res-line"><b>${esc(i.secao)} • ${esc(i.item)}</b><span class="pill ${esc(actionInfo(i.acao).classe)}">${esc(actionInfo(i.acao).emoji)} ${esc(i.acaoLabel)}</span>${i.obs?`<small>${esc(i.obs)}</small>`:''}</div>`).join('')}</details>` : '<div class="notice">Nenhum item crítico. Se necessário, gere PDF mesmo assim para registrar a avaliação.</div>';
   box.innerHTML = modoEdicao + `<div class="notice"><b>Resumo fácil para orçamento:</b> veja primeiro quantas peças comprar, quais posições/lados e quais serviços executar. O relatório técnico completo fica separado.</div>` + kpis + `<h3 class="mini-title">🧾 Peças para cotação / compra</h3>${pecasHtml}<h3 class="mini-title">🔧 Serviços / consertos</h3>${servHtml}<h3 class="mini-title">📋 Registro técnico</h3>${tecnicoHtml}`;
@@ -743,7 +794,7 @@ function entregaPayloadBase(){
   const base=payloadBase();
   const itens=getCriticalItems().map(i=>({checklistItemId:i.id, item:i.item, secao:i.secao, acao:i.acao, acaoLabel:i.acaoLabel, diagnosticoObs:i.obs, fotos:i.fotos||0, fotoUrls:i.fotoUrls||[], entrega:state.delivery[i.id]||{status:'pendente'}}));
   const dataEntrega=($('entregaData')?.value||'').trim();
-  return {id:uid(), checklistId:state.lastSavedId||base.id, tenantId:base.tenantId, oficinaNome:base.oficinaNome, placa:base.placa, osRef:base.osRef, osId:base.osId, osColecao:base.osColecao, osNumero:base.osNumero, osLabel:base.osLabel, km:base.km, tecnicoChecklist:base.tecnicoChecklist||base.responsavel, responsavel:base.responsavel, conferente:($('conferente')?.value||$('verificadorEntrega')?.value||state.session?.name||'').trim(), verificadorEntrega:($('verificadorEntrega')?.value||$('conferente')?.value||state.session?.name||'').trim(), entreguePor:($('entregaEntreguePor')?.value||'').trim(), recebidoPor:($('entregaRecebidoPor')?.value||'').trim(), documentoRecebedor:($('entregaDoc')?.value||'').trim(), dataEntrega:dataEntrega||nowISO(), perfil:state.session?.role||'', status:$('entregaStatus')?.value||'em_conferencia', observacaoFinal:$('entregaObs')?.value||'', itens, fotoUrls:base.fotoUrls||[], fotosGeraisUrls:base.fotoUrls||[], itemPhotos:base.itemPhotos||{}, itemFotos:base.itemFotos||{}, criadoEm:nowISO(), atualizadoEm:nowISO(), app:'OFICIN-IA-CHECKLIST-V15-16', versao:'v15.16', registroEntrega:true};
+  return {id:uid(), checklistId:state.lastSavedId||base.id, tenantId:base.tenantId, oficinaNome:base.oficinaNome, placa:base.placa, osRef:base.osRef, osId:base.osId, osColecao:base.osColecao, osNumero:base.osNumero, osLabel:base.osLabel, km:base.km, tecnicoChecklist:base.tecnicoChecklist||base.responsavel, responsavel:base.responsavel, conferente:($('conferente')?.value||$('verificadorEntrega')?.value||state.session?.name||'').trim(), verificadorEntrega:($('verificadorEntrega')?.value||$('conferente')?.value||state.session?.name||'').trim(), entreguePor:($('entregaEntreguePor')?.value||'').trim(), recebidoPor:($('entregaRecebidoPor')?.value||'').trim(), documentoRecebedor:($('entregaDoc')?.value||'').trim(), dataEntrega:dataEntrega||nowISO(), perfil:state.session?.role||'', status:$('entregaStatus')?.value||'em_conferencia', observacaoFinal:$('entregaObs')?.value||'', itens, fotoUrls:base.fotoUrls||[], fotosGeraisUrls:base.fotoUrls||[], itemPhotos:base.itemPhotos||{}, itemFotos:base.itemFotos||{}, criadoEm:nowISO(), atualizadoEm:nowISO(), app:'OFICIN-IA-CHECKLIST-V15-17', versao:'v15.17', registroEntrega:true};
 }
 async function saveEntrega(){
   setBusy('btnSalvarEntrega',true,'Salvando entrega...');
@@ -930,19 +981,19 @@ function rowsOrcamentoCliente(base){
 }
 async function gerarPDFOrcamento(){
   const data=payloadBase(); const jsPDF=window.jspdf?.jsPDF; if(!jsPDF){ toast('Biblioteca PDF não carregou.'); return; }
-  const pecas=rowsCotacaoPecas(data); const servs=rowsServicos(data); const qtd=pecas.reduce((s,r)=>s+(Number(r.Quantidade)||0),0);
+  const pecasDetalhe=rowsCotacaoPecas(data); const pecas=rowsPecasAgrupadas(data); const servs=rowsServicos(data); const qtd=pecas.reduce((s,r)=>s+(Number(r.QuantidadeTotal)||0),0);
   const doc=new jsPDF({unit:'mm',format:'a4'}); let y=0;
   doc.setFillColor(15,23,42); doc.rect(0,0,210,30,'F');
   doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.text('RESUMO PARA COTAÇÃO E ORÇAMENTO',12,13);
-  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.text('Peças separadas por quantidade/posição + serviços/consertos para aprovação',12,21);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.text('Peças agrupadas por compra + posições/lados + serviços/consertos para aprovação',12,21);
   y=38; doc.setTextColor(15,23,42); doc.setFont('helvetica','bold'); doc.setFontSize(9);
   doc.text(`Placa: ${data.placa||'-'}   O.S.: ${data.osRef||data.osNumero||'-'}   KM: ${data.km||'-'}   Técnico: ${data.tecnicoChecklist||data.responsavel||'-'}`.slice(0,118),12,y); y+=8;
   const cards=[['PEÇAS',`${qtd} un. / ${pecas.length} tipo(s)`],['SERVIÇOS',`${servs.length}`],['ATENÇÃO/REVISAR',`${(data.itens||[]).filter(i=>['atencao','revisar'].includes(i.acao)).length}`]];
   cards.forEach((c,i)=>{ const x=12+i*62; doc.setFillColor(248,250,252); doc.setDrawColor(226,232,240); doc.roundedRect(x,y,56,17,2,2,'FD'); doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(15,23,42); doc.text(c[1],x+4,y+7); doc.setFontSize(6.8); doc.setTextColor(100,116,139); doc.text(c[0],x+4,y+13); }); y+=25;
-  const tableHeader=(titulo)=>{ y=pdfSectionHeader(doc,titulo,y+2); doc.setFont('helvetica','bold'); doc.setFontSize(7.2); doc.setTextColor(71,85,105); doc.text('QTD',12,y); doc.text('PEÇA / SERVIÇO',25,y); doc.text('POSIÇÃO',96,y); doc.text('AÇÃO',135,y); doc.text('OBS.',158,y); y+=4; doc.setDrawColor(203,213,225); doc.line(12,y,198,y); y+=3; };
+  const tableHeader=(titulo)=>{ y=pdfSectionHeader(doc,titulo,y+2); doc.setFont('helvetica','bold'); doc.setFontSize(7.2); doc.setTextColor(71,85,105); doc.text('QTD',12,y); doc.text('PEÇA / SERVIÇO',25,y); doc.text('POSIÇÕES',94,y); doc.text('AÇÃO',128,y); doc.text('OBS./FOTOS',154,y); y+=4; doc.setDrawColor(203,213,225); doc.line(12,y,198,y); y+=3; };
   tableHeader('1. Peças para cotar/comprar');
   if(!pecas.length){ doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.text('Nenhuma peça para cotação.',12,y); y+=8; }
-  pecas.forEach((r,idx)=>{ y=pdfEnsurePage(doc,y+7); doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(15,23,42); doc.text(String(r.Quantidade||1),12,y); doc.text(String(r.PecaSolicitada||r.Componente||'').slice(0,38),25,y); doc.setFont('helvetica','normal'); doc.setFontSize(7.2); doc.setTextColor(51,65,85); doc.text(String(r.Posicao||'-').slice(0,22),96,y); doc.text(String(r.Acao||'-').slice(0,16),135,y); doc.text(String(r.Motivo||'').slice(0,28),158,y); y+=6; doc.setDrawColor(226,232,240); doc.line(12,y,198,y); });
+  for(const r of pecas){ y=pdfEnsurePage(doc,y+11); doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(15,23,42); doc.text(String(r.QuantidadeTotal||1),12,y); doc.text(String(r.Peca||'').slice(0,35),25,y); doc.setFont('helvetica','normal'); doc.setFontSize(7.2); doc.setTextColor(51,65,85); doc.text(String(r.Posicoes||'-').slice(0,19),94,y); doc.text(String(r.Acoes||'-').slice(0,14),128,y); doc.text(String(r.Observacoes||r.Detalhes||'').slice(0,26),154,y); const urls=fotosDeRows([r]).slice(0,2); if(urls.length){ let xx=176; for(const u of urls){ const img=await imageForPdf(u); doc.setDrawColor(226,232,240); doc.roundedRect(xx,y-5,10,8,1,1,'S'); if(img){ try{ doc.addImage(img,'JPEG',xx+0.4,y-4.6,9.2,7.2,undefined,'FAST'); }catch(e){ try{ doc.addImage(img,'PNG',xx+0.4,y-4.6,9.2,7.2,undefined,'FAST'); }catch(_){} } } xx+=11; } } y+=6; if(r.Detalhes){ doc.setFontSize(6.6); doc.setTextColor(100,116,139); doc.text(String('Detalhes: '+r.Detalhes).slice(0,116),25,y); y+=4; } doc.setDrawColor(226,232,240); doc.line(12,y,198,y); }
   tableHeader('2. Serviços / consertos');
   if(!servs.length){ doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.text('Nenhum serviço separado.',12,y); y+=8; }
   servs.forEach((r)=>{ y=pdfEnsurePage(doc,y+7); doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(15,23,42); doc.text('-',12,y); doc.text(String(r.ServicoOuComponente||'').slice(0,38),25,y); doc.setFont('helvetica','normal'); doc.setFontSize(7.2); doc.setTextColor(51,65,85); doc.text(String(r.Posicao||'-').slice(0,22),96,y); doc.text(String(r.Acao||'-').slice(0,16),135,y); doc.text(String(r.ObservacaoTecnica||'').slice(0,28),158,y); y+=6; doc.setDrawColor(226,232,240); doc.line(12,y,198,y); });
@@ -959,8 +1010,9 @@ function gerarXLSX(kind='checklist'){
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{Placa:base.placa,OS:base.osRef,KM:base.km,Oficina:base.oficinaNome,Tecnico:base.tecnicoChecklist||base.responsavel,ConferenteEntrega:base.verificadorEntrega||'',FotosGerais:(base.fotoUrls||[]).length,Data:fmtDateTime(base.criadoEm),OK:base.stats.ok,Atencao:base.stats.atencao,Trocar:base.stats.trocar,AcoesTecnicas:base.stats.tecnicas,Pendentes:base.stats.pending}]),'Resumo');
   const rc=resumoCotacao(base);
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{TotalQuantidadePecas:rc.qtdPecas,TiposDePeca:rc.tiposPecas,ServicosConsertos:rc.servicos.length,ItensParaAvaliar:rc.avaliar.length,Observacao:'Use a aba Pecas_Para_Cotar para pedir peças e a aba Servicos_Consertos para mão de obra/consertos.'}]),'Resumo_Compra');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rowsCotacaoPecas(base)),'Pecas_Para_Cotar');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{TotalQuantidadePecas:rc.qtdPecas,TiposDePecaAgrupados:rc.tiposPecas,LinhasDetalhadasDePecas:rc.pecas.length,ServicosConsertos:rc.servicos.length,ItensParaAvaliar:rc.avaliar.length,Observacao:'Use primeiro a aba Pecas_Agrupadas para comprar/cotar. A aba Pecas_Detalhadas mostra a origem técnica por item.'}]),'Resumo_Compra');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rowsPecasAgrupadas(base)),'Pecas_Agrupadas');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rowsCotacaoPecas(base)),'Pecas_Detalhadas');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rowsServicos(base)),'Servicos_Consertos');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rowsOrcamentoCliente(base)),'Orcamento_Cliente');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(base.itens.map(i=>({Secao:i.secao,Item:i.item,Posicao:inferPosicao(i),Acao:i.acaoLabel||i.acao,TipoOrcamento:tipoOrcamentoPorAcao(i.acao),Obs:i.obs||'',Obrigatorio:i.obrigatorio?'Sim':'Não',Criticidade:i.criticidade||'',Fotos:i.fotos||0,LinksFotos:(i.fotoUrls||[]).join(' | '),AtualizadoPor:i.updatedBy||''}))),'Itens_Tecnicos');
@@ -1206,7 +1258,8 @@ function bind(){
   $('btnHistorico')?.addEventListener('click',buscarHistorico); $('btnHistoricoFinal')?.addEventListener('click',()=>{go('screenInicio'); buscarHistorico();});
   $('btnConsultar')?.addEventListener('click',consultar); $('btnRodarConsulta')?.addEventListener('click',consultar); $('btnFecharConsulta')?.addEventListener('click',()=>go('screenInicio')); $('btnVoltarInicioConsulta')?.addEventListener('click',()=>go('screenInicio')); $('btnExportConsulta')?.addEventListener('click',gerarConsultaXLSX);
   $('buscaItem')?.addEventListener('input',renderSections);
-  $('fotoGeral')?.addEventListener('change',e=>addPhotosToArray(e.target.files,state.generalPhotos,()=>{renderPhotos(); toast('Fotos gerais adicionadas.');}));
+  $('fotoGeral')?.addEventListener('change',e=>addPhotosToArray(e.target.files,state.generalPhotos,()=>{renderPhotos(); toast('Fotos gerais adicionadas pela câmera.');}));
+  $('fotoGeralGaleria')?.addEventListener('change',e=>addPhotosToArray(e.target.files,state.generalPhotos,()=>{renderPhotos(); toast('Fotos gerais adicionadas da galeria.');}));
   $('btnDitarRelato')?.addEventListener('click',dictateRelato); $('btnAudio')?.addEventListener('click',toggleAudio);
   $('btnSalvar')?.addEventListener('click',saveChecklist); $('btnPDF')?.addEventListener('click',()=>gerarPDF()); $('btnPDFOrcamento')?.addEventListener('click',gerarPDFOrcamento); $('btnXLSX')?.addEventListener('click',()=>gerarXLSX('checklist')); $('btnA4')?.addEventListener('click',()=>printA4(false)); $('btnA4Topo')?.addEventListener('click',()=>printA4(false)); $('btnJSON')?.addEventListener('click',baixarJSON); $('btnAnexarOS')?.addEventListener('click',()=>anexarOS(false));
   $('btnEditarAtual')?.addEventListener('click',()=>go('screenChecklist')); $('btnExcluirAtual')?.addEventListener('click',deleteCurrentChecklist);
